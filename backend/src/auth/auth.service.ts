@@ -41,7 +41,7 @@ export class AuthService {
             if (user.emailConfirmed) return { message: 'Email already confirmed' };
 
             user.emailConfirmed = true;
-            await this.usersService.update(user);
+            await this.usersService.save(user);
 
             return { message: 'Email confirmed successfuly' };
         } catch (error) {

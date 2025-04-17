@@ -5,6 +5,7 @@ import { JwtService } from '@nestjs/jwt';
 import { User } from './user.entity';
 import { SafeUser } from './types/safe-user-type';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user-dto';
 import { sendConfirmationEmail } from 'src/mail/mail.service';
 import { excludePassword } from 'src/utils/exclude-password';
 import * as bcrypt from 'bcryptjs';
@@ -36,11 +37,21 @@ export class UsersService {
         );
         await sendConfirmationEmail(saved.email, token);
 
-        return excludePassword(user);
+        return excludePassword(saved);
     }
 
-    async update(user: User): Promise<void> {
+    async save(user: User): Promise<void> {
         await this.usersRepository.save(user);
+    }
+
+    async edit(id: number, updates: UpdateUserDto): Promise<SafeUser> {
+        const user = await this.usersRepository.findOneBy({ id });
+        if (!user) throw new NotFoundException(`User with ID ${id} not found`);
+        
+        if (updates.name) user.name = updates.name;
+
+        const updated = await this.usersRepository.save(user);
+        return excludePassword(updated);
     }
 
     async remove(id: number): Promise<void> {
@@ -50,7 +61,7 @@ export class UsersService {
 
     async findAll(): Promise<SafeUser[]> {
         const users = await this.usersRepository.find();
-        return users.map(({ password, ...safeUser }) => safeUser);
+        return users.map(excludePassword);
     }
 
     async findByEmail(email: string): Promise<User | null> {
