@@ -1,12 +1,13 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AppController } from './app.controller'; // ✅ Agregado
+import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { ScheduleModule } from '@nestjs/schedule';
 import { UsersModule } from './users/users.module';
 import { User } from './users/user.entity';
 import { AuthModule } from './auth/auth.module';
 import { required } from './config/env.utils';
-
+import { GlobalJwtModule } from './config/jwt.module';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -19,10 +20,12 @@ import { required } from './config/env.utils';
       entities: [User],
       synchronize: true, // ⚠️ Disable this in production!
     }),
+    GlobalJwtModule,
     UsersModule,
     AuthModule,
+    ScheduleModule.forRoot(),
   ],
   controllers: [AppController],
-  providers: [AppService], 
+  providers: [AppService],
 })
 export class AppModule {}

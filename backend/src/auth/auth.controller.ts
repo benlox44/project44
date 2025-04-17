@@ -17,6 +17,11 @@ export class AuthController {
         return this.authService.confirmEmailChange(token);
     }
 
+    @Get('revert-email-change')
+    async revertEmailChange(@Query('token') token: string) {
+        return this.authService.revertEmailChange(token);
+    }
+
     @Post('login')
     async login(@Body() dto: LoginDto) {
         const user = await this.authService.validateUser(dto.email, dto.password);

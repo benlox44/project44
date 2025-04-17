@@ -1,22 +1,31 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
 
 @Entity()
 export class User {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @CreateDateColumn()
+  createdAt: Date;
+
   @Column()
   name: string;
-
-  @Column({unique: true})
-  email: string;
 
   @Column()
   password: string;
 
+  @Column({unique: true})
+  email: string;
+
   @Column({ default: false })
-  emailConfirmed: boolean;
+  isEmailConfirmed: boolean;
+
+  @Column({ type: 'varchar', nullable: true })
+  oldEmail: string | null;
 
   @Column({ type: 'varchar', nullable: true })
   newEmail: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  emailChangedAt: Date | null;
 }

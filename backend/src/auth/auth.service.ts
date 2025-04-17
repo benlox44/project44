@@ -4,7 +4,8 @@ import * as bcrypt from 'bcryptjs';
 import { UsersService } from 'src/users/users.service';
 import { SafeUser } from 'src/users/types/safe-user-type';
 import { excludePassword } from 'src/utils/exclude-password';
-import { verifyTokenOrThrow } from 'src/utils/verify-token';
+import { signToken, verifyTokenOrThrow } from 'src/utils/jwt';
+import { sendRevertEmailChange } from 'src/mail/mail.service';
 
 @Injectable()
 export class AuthService {
@@ -19,9 +20,9 @@ export class AuthService {
         const user = await this.usersService.findbyId(payload.sub);
         if (!user) throw new BadRequestException('User not found');
             
-        if (user.emailConfirmed) return { message: 'Email already confirmed' };
+        if (user.isEmailConfirmed) return { message: 'Email already confirmed' };
 
-        user.emailConfirmed = true;
+        user.isEmailConfirmed = true;
         await this.usersService.update(user);
 
         return { message: 'Email confirmed successfuly' };
@@ -33,13 +34,38 @@ export class AuthService {
         const user = await this.usersService.findbyId(payload.sub);
         if (!user) throw new BadRequestException('User not found');
 
-        if (user.newEmail !== payload.newEmail) throw new BadRequestException('This confirmation link is no longer valid')
+        if (user.email === payload.email) return { message: 'Email already changed' };
+        if (user.newEmail !== payload.email) throw new BadRequestException('This confirmation link is no longer valid')
 
+        user.oldEmail = user.email;
         user.email = user.newEmail!;
         user.newEmail = null;
+
+        user.emailChangedAt = new Date();
+
         await this.usersService.update(user);
-      
+
+        const revertToken = signToken(this.jwtService, { sub: user.id, email: user.oldEmail }, '30d');
+        await sendRevertEmailChange(user.oldEmail, revertToken);
+
         return { message: 'Email changed successfully' };
+    }
+
+    async revertEmailChange(token: string) {
+        const payload = verifyTokenOrThrow(this.jwtService, token);
+
+        const user = await this.usersService.findbyId(payload.sub);
+        if (!user) throw new BadRequestException('User not found');
+        
+        if (user.email === payload.email) return { message: 'Revert already done' };
+        if (user.oldEmail !== payload.email) throw new BadRequestException('This revert link is no longer valid');
+
+        user.email = user.oldEmail!;
+        user.oldEmail = null;
+        user.emailChangedAt = null;
+      
+        await this.usersService.update(user);
+        return { message: 'Email change reverted successfully' };
     }
 
     async validateUser(email: string, password: string): Promise<SafeUser | null> {
@@ -49,15 +75,13 @@ export class AuthService {
         const match = await bcrypt.compare(password, user.password);
         if (!match) return null;
 
-        if (!user.emailConfirmed) throw new ForbiddenException('Email not confirmed');
+        if (!user.isEmailConfirmed) throw new ForbiddenException('Email not confirmed');
 
         return excludePassword(user);
     }
 
     async login(user: SafeUser) {
-        const payload = { email: user.email, sub: user.id };
-        return {
-            access_token: this.jwtService.sign(payload),
-        }
-    };
+        const acces_token = signToken(this.jwtService, { sub: user.id, email: user.email }, '7d');
+        return { acces_token: acces_token }
+    };    
 }

@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DeleteResult, LessThan, Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { User } from './user.entity';
@@ -9,6 +9,8 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user-dto';
 import { sendEmailConfirmation, sendNewEmailConfirmation } from 'src/mail/mail.service';
 import { excludePassword } from 'src/utils/exclude-password';
+import { signToken } from 'src/utils/jwt';
+import { UpdateUserEmailDto } from './dto/update-user-email.dto';
 
 @Injectable()
 export class UsersService {
@@ -44,12 +46,8 @@ export class UsersService {
          
         const saved = await this.usersRepository.save(user);
 
-        const token = this.jwtService.sign(
-            { email: saved.email },
-            { expiresIn: '1h' }
-        );
+        const token = signToken(this.jwtService, { sub: user.id, email: user.email });
         await sendEmailConfirmation(saved.email, token);
-
         return excludePassword(saved);
     }
 
@@ -60,6 +58,8 @@ export class UsersService {
     async editProfile(id: number, dto: UpdateUserDto): Promise<SafeUser> {
         const user = await this.usersRepository.findOneBy({ id });
         if (!user) throw new NotFoundException(`User with ID ${id} not found`);
+
+        if (dto.name === user.name) throw new BadRequestException("The new name must be different from the current one")
         
         if (dto.name) user.name = dto.name;
 
@@ -67,27 +67,38 @@ export class UsersService {
         return excludePassword(updated);
     }
 
-    async requestEmailChange(id: number, newEmail: string) {
+    async requestEmailChange(id: number, dto: UpdateUserEmailDto) {
         const user = await this.usersRepository.findOneBy({ id });
-        if (!user) throw new NotFoundException();
+        if (!user) throw new NotFoundException(`User with ID ${id} not found`);
 
-        const existing = await this.usersRepository.findOneBy({ email: newEmail });
+        const match = await bcrypt.compare(dto.password, user.password);
+        if (!match) throw new ForbiddenException('Incorrect password');
+
+        const existing = await this.usersRepository.findOneBy({ email: dto.newEmail });
         if (existing) throw new ConflictException('Email already in use');
 
-        user.newEmail = newEmail;
+        if (user.emailChangedAt && new Date().getTime() - user.emailChangedAt.getTime() < 2_592_000_000) {
+            throw new ConflictException('You can only change your email once every 30 days');
+        }
+
+        user.newEmail = dto.newEmail;
         await this.usersRepository.save(user);
 
-        const token = this.jwtService.sign(
-            { sub: user.id, newEmail },
-            { expiresIn: '1d' },
-        );
+        const token = signToken(this.jwtService, { sub:user.id, email: user.newEmail });
+        await sendNewEmailConfirmation(dto.newEmail, token);
 
-        await sendNewEmailConfirmation(newEmail, token);
-        return { message: 'Confirmation email sent to ' + newEmail};
+        return { message: 'Confirmation email sent to ' + dto.newEmail};
     }
 
     async remove(id: number): Promise<void> {
         const result = await this.usersRepository.delete(id);
         if (result.affected === 0) throw new NotFoundException(`User with ID ${id} not found`);
-    }      
+    }
+
+    async deleteUnconfirmedOlderThan(date: Date): Promise<DeleteResult> {
+        return await this.usersRepository.delete({
+            isEmailConfirmed: false,
+            createdAt: LessThan(date),
+        });
+    }
 }
