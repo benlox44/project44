@@ -1,9 +1,10 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException, ForbiddenException } from '@nestjs/common';
 import { UsersService } from 'src/users/users.service';
 import { SafeUser } from 'src/users/types/safe-user-type';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
-import { access } from 'fs';
+import { excludePassword } from 'src/utils/exclude-password';
+import { use } from 'passport';
 
 @Injectable()
 export class AuthService {
@@ -14,11 +15,14 @@ export class AuthService {
 
     async validateUser(email: string, password: string): Promise<SafeUser | null> {
         const user = await this.usersService.findByEmail(email);
-        if (user && await bcrypt.compare(password, user.password)) {
-            const { password, ...result } = user;
-            return result;
-        }
-        return null;
+        if (!user) return null;
+
+        const match = await bcrypt.compare(password, user.password);
+        if (!match) return null;
+
+        if (!user.emailConfirmed) throw new ForbiddenException('Email not confirmed');
+
+        return excludePassword(user);
     }
 
     async login(user: SafeUser) {
@@ -27,4 +31,21 @@ export class AuthService {
             access_token: this.jwtService.sign(payload),
         }
     };
+
+    async confirmEmail(token: string) {
+        try {
+            const payload = this.jwtService.verify(token);
+            const user = await this.usersService.findByEmail(payload.email);
+
+            if (!user) throw new BadRequestException('Invalid token');
+            if (user.emailConfirmed) return { message: 'Email already confirmed' };
+
+            user.emailConfirmed = true;
+            await this.usersService.update(user);
+
+            return { message: 'Email confirmed successfuly' };
+        } catch (error) {
+            throw new BadRequestException('Invalid or expired token');
+        }
+    }
 }

@@ -1,7 +1,6 @@
 import { Controller, ParseIntPipe, Post, Body, Get, Delete, Param } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { User } from './user.entity';
 import { SafeUser } from './types/safe-user-type';
 
 @Controller('users')

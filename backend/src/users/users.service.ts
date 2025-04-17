@@ -1,9 +1,12 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { JwtService } from '@nestjs/jwt';
 import { User } from './user.entity';
 import { SafeUser } from './types/safe-user-type';
 import { CreateUserDto } from './dto/create-user.dto';
+import { sendConfirmationEmail } from 'src/mail/mail.service';
+import { excludePassword } from 'src/utils/exclude-password';
 import * as bcrypt from 'bcryptjs';
 
 @Injectable()
@@ -11,6 +14,7 @@ export class UsersService {
     constructor(
         @InjectRepository(User)
         private usersRepository: Repository<User>,
+        private jwtService: JwtService,
     ) {}
 
     async create(data: CreateUserDto): Promise<SafeUser> {
@@ -25,8 +29,18 @@ export class UsersService {
         });
          
         const saved = await this.usersRepository.save(user);
-        const { password, ...safeUser } = saved;
-        return safeUser;
+
+        const token = this.jwtService.sign(
+            { email: saved.email },
+            { expiresIn: '1h' }
+        );
+        await sendConfirmationEmail(saved.email, token);
+
+        return excludePassword(user);
+    }
+
+    async update(user: User): Promise<void> {
+        await this.usersRepository.save(user);
     }
 
     async remove(id: number): Promise<void> {
