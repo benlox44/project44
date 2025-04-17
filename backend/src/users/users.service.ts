@@ -7,7 +7,7 @@ import { User } from './user.entity';
 import { SafeUser } from './types/safe-user-type';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user-dto';
-import { sendConfirmationEmail } from 'src/mail/mail.service';
+import { sendEmailConfirmation, sendNewEmailConfirmation } from 'src/mail/mail.service';
 import { excludePassword } from 'src/utils/exclude-password';
 
 @Injectable()
@@ -35,23 +35,13 @@ export class UsersService {
             { email: saved.email },
             { expiresIn: '1h' }
         );
-        await sendConfirmationEmail(saved.email, token);
+        await sendEmailConfirmation(saved.email, token);
 
         return excludePassword(saved);
     }
 
     async save(user: User): Promise<void> {
         await this.usersRepository.save(user);
-    }
-
-    async edit(id: number, updates: UpdateUserDto): Promise<SafeUser> {
-        const user = await this.usersRepository.findOneBy({ id });
-        if (!user) throw new NotFoundException(`User with ID ${id} not found`);
-        
-        if (updates.name) user.name = updates.name;
-
-        const updated = await this.usersRepository.save(user);
-        return excludePassword(updated);
     }
 
     async remove(id: number): Promise<void> {
@@ -64,7 +54,40 @@ export class UsersService {
         return users.map(excludePassword);
     }
 
+    async findbyId(id: number): Promise<User | null> {
+        return this.usersRepository.findOneBy({ id });
+    }
+
     async findByEmail(email: string): Promise<User | null> {
         return this.usersRepository.findOneBy({ email });
+    }
+
+    async edit(id: number, updates: UpdateUserDto): Promise<SafeUser> {
+        const user = await this.usersRepository.findOneBy({ id });
+        if (!user) throw new NotFoundException(`User with ID ${id} not found`);
+        
+        if (updates.name) user.name = updates.name;
+
+        const updated = await this.usersRepository.save(user);
+        return excludePassword(updated);
+    }
+
+    async requestEmailChange(id: number, newEmail: string) {
+        const user = await this.usersRepository.findOneBy({ id });
+        if (!user) throw new NotFoundException();
+
+        const existing = await this.usersRepository.findOneBy({ email: newEmail });
+        if (existing) throw new ConflictException('Email already in use');
+
+        user.newEmail = newEmail;
+        await this.usersRepository.save(user);
+
+        const token = this.jwtService.sign(
+            { sub: user.id, newEmail },
+            { expiresIn: '1d' },
+        );
+
+        await sendNewEmailConfirmation(newEmail, token);
+        return { message: 'Confirmation email sent to ' + newEmail};
     }
 }

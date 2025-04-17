@@ -47,4 +47,25 @@ export class AuthService {
             throw new BadRequestException('Invalid or expired token');
         }
     }
+
+    async confirmEmailChange(token: string) {
+        try {
+            const payload = this.jwtService.verify(token);
+            console.log('🔍 Payload:', payload);
+
+            const user = await this.usersService.findbyId(payload.sub);
+            console.log(user);
+
+            if (!user || user.newEmail !== payload.newEmail) throw new BadRequestException('Invalid confirmation token');
+      
+            user.email = user.newEmail!;
+            user.newEmail = null;
+            await this.usersService.save(user);
+      
+            return { message: 'Email changed successfully' };
+        } catch (err) {
+            console.error('❌ Confirm email error:', err.message);
+            throw new BadRequestException('Invalid or expired token');
+        }
+    }      
 }

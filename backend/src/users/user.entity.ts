@@ -16,4 +16,7 @@ export class User {
 
   @Column({ default: false })
   emailConfirmed: boolean;
+
+  @Column({ type: 'varchar', nullable: true })
+  newEmail: string | null;
 }

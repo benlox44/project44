@@ -6,6 +6,7 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user-dto';
 import { SafeUser } from './types/safe-user-type';
+import { UpdateEmailDto } from './dto/update-email.dto';
 
 @Controller('users')
 export class UsersController {
@@ -20,9 +21,18 @@ export class UsersController {
     @Patch('me')
     async update(
         @Req() req: AuthRequest,
-        @Body() updateUserDto: UpdateUserDto
+        @Body() dto: UpdateUserDto
     ): Promise<SafeUser> {
-        return this.usersService.edit(req.user.sub, updateUserDto);
+        return this.usersService.edit(req.user.sub, dto);
+    }
+
+    @UseGuards(AuthGuard('jwt'))
+    @Patch('me/email')
+    async requestEmailChange(
+        @Req() req: AuthRequest,
+        @Body() dto: UpdateEmailDto,
+    ) {
+        return this.usersService.requestEmailChange(req.user.sub, dto.newEmail)
     }
 
     @Delete(':id')

@@ -7,8 +7,8 @@ export class AuthController {
     constructor(private readonly authService: AuthService) {}
 
     @Post('login')
-    async login(@Body() loginDto: LoginDto) {
-        const user = await this.authService.validateUser(loginDto.email, loginDto.password);
+    async login(@Body() dto: LoginDto) {
+        const user = await this.authService.validateUser(dto.email, dto.password);
         if (!user) throw new UnauthorizedException();
         return this.authService.login(user);
     }
@@ -17,5 +17,10 @@ export class AuthController {
     async confirmEmail(@Query('token') token: string) {
         if (!token) throw new BadRequestException('Token is required');
         return this.authService.confirmEmail(token);
+    }
+
+    @Get('confirm-email-change')
+    async confirmEmailChange(@Query('token') token: string) {
+        return this.authService.confirmEmailChange(token);
     }
 }
