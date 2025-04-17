@@ -1,0 +1,13 @@
+# Node
+node_modules/
+dist/
+.env
+
+# Logs
+*.log
+
+# Docker
+pgdata/
+
+# Others
+*.local
