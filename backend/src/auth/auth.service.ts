@@ -4,6 +4,7 @@ import * as bcrypt from 'bcryptjs';
 import { UsersService } from 'src/users/users.service';
 import { SafeUser } from 'src/users/types/safe-user-type';
 import { excludePassword } from 'src/utils/exclude-password';
+import { verifyTokenOrThrow } from 'src/utils/verify-token';
 
 @Injectable()
 export class AuthService {
@@ -11,6 +12,35 @@ export class AuthService {
         private usersService: UsersService,
         private jwtService: JwtService,
     ) {}
+
+    async confirmEmail(token: string) {
+        const payload = verifyTokenOrThrow(this.jwtService, token);
+
+        const user = await this.usersService.findbyId(payload.sub);
+        if (!user) throw new BadRequestException('User not found');
+            
+        if (user.emailConfirmed) return { message: 'Email already confirmed' };
+
+        user.emailConfirmed = true;
+        await this.usersService.update(user);
+
+        return { message: 'Email confirmed successfuly' };
+    }
+
+    async confirmEmailChange(token: string) {
+        const payload = verifyTokenOrThrow(this.jwtService, token);
+
+        const user = await this.usersService.findbyId(payload.sub);
+        if (!user) throw new BadRequestException('User not found');
+
+        if (user.newEmail !== payload.newEmail) throw new BadRequestException('This confirmation link is no longer valid')
+
+        user.email = user.newEmail!;
+        user.newEmail = null;
+        await this.usersService.update(user);
+      
+        return { message: 'Email changed successfully' };
+    }
 
     async validateUser(email: string, password: string): Promise<SafeUser | null> {
         const user = await this.usersService.findByEmail(email);
@@ -30,42 +60,4 @@ export class AuthService {
             access_token: this.jwtService.sign(payload),
         }
     };
-
-    async confirmEmail(token: string) {
-        try {
-            const payload = this.jwtService.verify(token);
-            const user = await this.usersService.findByEmail(payload.email);
-
-            if (!user) throw new BadRequestException('Invalid token');
-            if (user.emailConfirmed) return { message: 'Email already confirmed' };
-
-            user.emailConfirmed = true;
-            await this.usersService.save(user);
-
-            return { message: 'Email confirmed successfuly' };
-        } catch (error) {
-            throw new BadRequestException('Invalid or expired token');
-        }
-    }
-
-    async confirmEmailChange(token: string) {
-        try {
-            const payload = this.jwtService.verify(token);
-            console.log('🔍 Payload:', payload);
-
-            const user = await this.usersService.findbyId(payload.sub);
-            console.log(user);
-
-            if (!user || user.newEmail !== payload.newEmail) throw new BadRequestException('Invalid confirmation token');
-      
-            user.email = user.newEmail!;
-            user.newEmail = null;
-            await this.usersService.save(user);
-      
-            return { message: 'Email changed successfully' };
-        } catch (err) {
-            console.error('❌ Confirm email error:', err.message);
-            throw new BadRequestException('Invalid or expired token');
-        }
-    }      
 }

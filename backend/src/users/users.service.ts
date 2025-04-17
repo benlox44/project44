@@ -18,6 +18,19 @@ export class UsersService {
         private jwtService: JwtService,
     ) {}
 
+    async findAll(): Promise<SafeUser[]> {
+        const users = await this.usersRepository.find();
+        return users.map(excludePassword);
+    }
+
+    async findbyId(id: number): Promise<User | null> {
+        return this.usersRepository.findOneBy({ id });
+    }
+
+    async findByEmail(email: string): Promise<User | null> {
+        return this.usersRepository.findOneBy({ email });
+    }
+
     async create(data: CreateUserDto): Promise<SafeUser> {
         const existing = await this.usersRepository.findOneBy({email: data.email});
         if (existing) throw new ConflictException('Email is already registered');
@@ -40,33 +53,15 @@ export class UsersService {
         return excludePassword(saved);
     }
 
-    async save(user: User): Promise<void> {
+    async update(user: User): Promise<void> {
         await this.usersRepository.save(user);
     }
 
-    async remove(id: number): Promise<void> {
-        const result = await this.usersRepository.delete(id);
-        if (result.affected === 0) throw new NotFoundException(`User with ID ${id} not found`);
-    }      
-
-    async findAll(): Promise<SafeUser[]> {
-        const users = await this.usersRepository.find();
-        return users.map(excludePassword);
-    }
-
-    async findbyId(id: number): Promise<User | null> {
-        return this.usersRepository.findOneBy({ id });
-    }
-
-    async findByEmail(email: string): Promise<User | null> {
-        return this.usersRepository.findOneBy({ email });
-    }
-
-    async edit(id: number, updates: UpdateUserDto): Promise<SafeUser> {
+    async editProfile(id: number, dto: UpdateUserDto): Promise<SafeUser> {
         const user = await this.usersRepository.findOneBy({ id });
         if (!user) throw new NotFoundException(`User with ID ${id} not found`);
         
-        if (updates.name) user.name = updates.name;
+        if (dto.name) user.name = dto.name;
 
         const updated = await this.usersRepository.save(user);
         return excludePassword(updated);
@@ -90,4 +85,9 @@ export class UsersService {
         await sendNewEmailConfirmation(newEmail, token);
         return { message: 'Confirmation email sent to ' + newEmail};
     }
+
+    async remove(id: number): Promise<void> {
+        const result = await this.usersRepository.delete(id);
+        if (result.affected === 0) throw new NotFoundException(`User with ID ${id} not found`);
+    }      
 }

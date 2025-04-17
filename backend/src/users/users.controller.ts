@@ -12,9 +12,14 @@ import { UpdateEmailDto } from './dto/update-email.dto';
 export class UsersController {
     constructor(private readonly usersService: UsersService) {}
 
+    @Get()
+    findAll(): Promise<SafeUser[]> {
+        return this.usersService.findAll();
+    }
+
     @Post()
-    create(@Body() createUserDto: CreateUserDto): Promise<SafeUser> {
-        return this.usersService.create(createUserDto);
+    create(@Body() dto: CreateUserDto): Promise<SafeUser> {
+        return this.usersService.create(dto);
     }
 
     @UseGuards(AuthGuard('jwt'))
@@ -23,7 +28,7 @@ export class UsersController {
         @Req() req: AuthRequest,
         @Body() dto: UpdateUserDto
     ): Promise<SafeUser> {
-        return this.usersService.edit(req.user.sub, dto);
+        return this.usersService.editProfile(req.user.sub, dto);
     }
 
     @UseGuards(AuthGuard('jwt'))
@@ -39,10 +44,5 @@ export class UsersController {
     async remove(@Param('id', ParseIntPipe) id: number): Promise<{ message: string }> {
         await this.usersService.remove(id);
         return { message: `User with ID ${id} deleted successfully` }
-    }
-
-    @Get()
-    findAll(): Promise<SafeUser[]> {
-        return this.usersService.findAll();
     }
 }
