@@ -1,3 +1,10 @@
+Welcome
+
+This is a personal project to learn web development.
+I'm Currently on Backend with Nestjs, focused on users
+
+Run:
+
 docker compose up --build
 http://localhost:8080
 
