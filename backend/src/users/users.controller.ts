@@ -1,4 +1,7 @@
 import { Controller, ParseIntPipe, Body, Post, Patch, Get, Delete, Param } from '@nestjs/common';
+import { UseGuards, Req } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { AuthRequest } from 'src/auth/types/auth-request.interface';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user-dto';
@@ -13,12 +16,13 @@ export class UsersController {
         return this.usersService.create(createUserDto);
     }
 
-    @Patch(':id')
+    @UseGuards(AuthGuard('jwt'))
+    @Patch('me')
     async update(
-        @Param('id', ParseIntPipe) id: number,
+        @Req() req: AuthRequest,
         @Body() updateUserDto: UpdateUserDto
     ): Promise<SafeUser> {
-        return this.usersService.edit(id, updateUserDto);
+        return this.usersService.edit(req.user.sub, updateUserDto);
     }
 
     @Delete(':id')

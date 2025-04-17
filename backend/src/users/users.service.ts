@@ -2,13 +2,13 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcryptjs';
 import { User } from './user.entity';
 import { SafeUser } from './types/safe-user-type';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user-dto';
 import { sendConfirmationEmail } from 'src/mail/mail.service';
 import { excludePassword } from 'src/utils/exclude-password';
-import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class UsersService {

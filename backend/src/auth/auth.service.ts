@@ -1,10 +1,9 @@
 import { BadRequestException, Injectable, UnauthorizedException, ForbiddenException } from '@nestjs/common';
-import { UsersService } from 'src/users/users.service';
-import { SafeUser } from 'src/users/types/safe-user-type';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
+import { UsersService } from 'src/users/users.service';
+import { SafeUser } from 'src/users/types/safe-user-type';
 import { excludePassword } from 'src/utils/exclude-password';
-import { use } from 'passport';
 
 @Injectable()
 export class AuthService {
