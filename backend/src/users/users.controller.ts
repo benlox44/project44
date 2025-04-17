@@ -18,7 +18,7 @@ export class UsersController {
     }
 
     @Post()
-    create(@Body() dto: CreateUserDto): Promise<SafeUser> {
+    create(@Body() dto: CreateUserDto): Promise<{ message: string }> {
         return this.usersService.create(dto);
     }
 

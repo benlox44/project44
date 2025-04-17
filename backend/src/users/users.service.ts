@@ -33,7 +33,7 @@ export class UsersService {
         return this.usersRepository.findOneBy({ email });
     }
 
-    async create(data: CreateUserDto): Promise<SafeUser> {
+    async create(data: CreateUserDto): Promise<{ message: string }> {
         const existing = await this.usersRepository.findOneBy({email: data.email});
         if (existing) throw new ConflictException('Email is already registered');
         
@@ -48,7 +48,8 @@ export class UsersService {
 
         const token = signToken(this.jwtService, { sub: user.id, email: user.email });
         await sendEmailConfirmation(saved.email, token);
-        return excludePassword(saved);
+        
+        return { message: 'Confirmation email sent to ' + saved.email };
     }
 
     async update(user: User): Promise<void> {
