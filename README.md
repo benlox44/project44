@@ -10,7 +10,6 @@ http://localhost:8080
 
 To do:
 
--Delete your account
 -Change password
 -Forgot password (sent email)
 -Obligate to change password if you revert

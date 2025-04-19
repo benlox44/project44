@@ -91,7 +91,7 @@ export class UsersService {
         return { message: 'Confirmation email sent to ' + dto.newEmail};
     }
 
-    async remove(id: number): Promise<void> {
+    async delete(id: number): Promise<void> {
         const result = await this.usersRepository.delete(id);
         if (result.affected === 0) throw new NotFoundException(`User with ID ${id} not found`);
     }

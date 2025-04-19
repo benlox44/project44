@@ -40,9 +40,16 @@ export class UsersController {
         return this.usersService.requestEmailChange(req.user.sub, dto);
     }
 
+    @UseGuards(AuthGuard('jwt'))
+    @Delete('me')
+    async deleteMe(@Req() req: AuthRequest): Promise<{ message: string }> {
+        await this.usersService.delete(req.user.sub);
+        return { message: 'Your account was deleted successfully' };
+    }
+
     @Delete(':id')
-    async remove(@Param('id', ParseIntPipe) id: number): Promise<{ message: string }> {
-        await this.usersService.remove(id);
+    async delete(@Param('id', ParseIntPipe) id: number): Promise<{ message: string }> {
+        await this.usersService.delete(id);
         return { message: `User with ID ${id} deleted successfully` }
     }
 }
