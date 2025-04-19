@@ -82,7 +82,7 @@ export class AuthService {
     return excludePassword(user);
   }
 
-  async login(user: SafeUser) {
+  login(user: SafeUser) {
     const acces_token = signToken(this.jwtService, { sub: user.id, email: user.email }, '7d');
     return { acces_token: acces_token };
   }

@@ -1,19 +1,19 @@
 import { JwtService } from '@nestjs/jwt';
 import { BadRequestException } from '@nestjs/common';
+import { JwtPayload } from 'src/auth/types/jwt-payload.interface';
 
-interface Payload {
-  sub: number;
-  email: string;
-}
-
-export function verifyTokenOrThrow(jwtService: JwtService, token: string): any {
+export function verifyTokenOrThrow(jwtService: JwtService, token: string): JwtPayload {
   try {
-    return jwtService.verify(token);
-  } catch (err) {
+    return jwtService.verify<JwtPayload>(token);
+  } catch (_err) {
     throw new BadRequestException('Invalid or expired token');
   }
 }
 
-export function signToken(jwtService: JwtService, payload: Payload, expiresIn: string = '1d'): string {
+export function signToken(
+  jwtService: JwtService,
+  payload: JwtPayload,
+  expiresIn: string = '1d',
+): string {
   return jwtService.sign(payload, { expiresIn });
 }
