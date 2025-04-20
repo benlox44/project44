@@ -1,11 +1,17 @@
-import { BadRequestException, Injectable, ForbiddenException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  ForbiddenException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { UsersService } from 'src/users/users.service';
-import { SafeUser } from 'src/users/types/safe-user-type';
-import { excludePassword } from 'src/utils/exclude-password';
 import { signToken, verifyTokenOrThrow } from 'src/utils/jwt';
 import { sendRevertEmailChange } from 'src/mail/mail.service';
+import { LoginDto } from './dto/login.dto';
+import { User } from 'src/users/user.entity';
+import { authConfig } from 'src/config/auth.config';
 
 @Injectable()
 export class AuthService {
@@ -14,51 +20,51 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async confirmEmail(token: string) {
+  // Get
+  async confirmEmail(token: string): Promise<void> {
     const payload = verifyTokenOrThrow(this.jwtService, token);
+    const user = await this.usersService.findByIdOrThrow(payload.sub);
 
-    const user = await this.usersService.findbyId(payload.sub);
-    if (!user) throw new BadRequestException('User not found');
-
-    if (user.isEmailConfirmed) return { message: 'Email already confirmed' };
+    if (user.isEmailConfirmed)
+      throw new BadRequestException('Email already confirmed');
 
     user.isEmailConfirmed = true;
     await this.usersService.update(user);
-
-    return { message: 'Email confirmed successfuly' };
   }
 
-  async confirmEmailChange(token: string) {
+  async confirmEmailChange(token: string): Promise<void> {
     const payload = verifyTokenOrThrow(this.jwtService, token);
+    const user = await this.usersService.findByIdOrThrow(payload.sub);
 
-    const user = await this.usersService.findbyId(payload.sub);
-    if (!user) throw new BadRequestException('User not found');
-
-    if (user.email === payload.email) return { message: 'Email already changed' };
+    if (user.email === payload.email)
+      throw new BadRequestException('Email already changed');
     if (user.newEmail !== payload.email)
-      throw new BadRequestException('This confirmation link is no longer valid');
+      throw new BadRequestException(
+        'This confirmation link is no longer valid',
+      );
 
     user.oldEmail = user.email;
     user.email = user.newEmail!;
     user.newEmail = null;
-
     user.emailChangedAt = new Date();
 
     await this.usersService.update(user);
 
-    const revertToken = signToken(this.jwtService, { sub: user.id, email: user.oldEmail }, '30d');
-    await sendRevertEmailChange(user.oldEmail, revertToken);
+    const revertToken = signToken(
+      this.jwtService,
+      { sub: user.id, email: user.oldEmail },
+      authConfig.jwt.emailConfirmationExpiresIn,
+    );
 
-    return { message: 'Email changed successfully' };
+    await sendRevertEmailChange(user.oldEmail, revertToken);
   }
 
-  async revertEmailChange(token: string) {
+  async revertEmail(token: string): Promise<void> {
     const payload = verifyTokenOrThrow(this.jwtService, token);
+    const user = await this.usersService.findByIdOrThrow(payload.sub);
 
-    const user = await this.usersService.findbyId(payload.sub);
-    if (!user) throw new BadRequestException('User not found');
-
-    if (user.email === payload.email) return { message: 'Revert already done' };
+    if (user.email === payload.email)
+      throw new BadRequestException('Email revert already done');
     if (user.oldEmail !== payload.email)
       throw new BadRequestException('This revert link is no longer valid');
 
@@ -67,23 +73,30 @@ export class AuthService {
     user.emailChangedAt = null;
 
     await this.usersService.update(user);
-    return { message: 'Email change reverted successfully' };
   }
 
-  async validateUser(email: string, password: string): Promise<SafeUser | null> {
-    const user = await this.usersService.findByEmail(email);
-    if (!user) return null;
-
-    const match = await bcrypt.compare(password, user.password);
-    if (!match) return null;
-
-    if (!user.isEmailConfirmed) throw new ForbiddenException('Email not confirmed');
-
-    return excludePassword(user);
-  }
-
-  login(user: SafeUser) {
-    const acces_token = signToken(this.jwtService, { sub: user.id, email: user.email }, '7d');
+  // Post
+  async login(dto: LoginDto): Promise<{ acces_token: string }> {
+    const user = await this.validateUserCredentials(dto);
+    const acces_token = signToken(
+      this.jwtService,
+      { sub: user.id, email: user.email },
+      authConfig.jwt.accessTokenExpiresIn,
+    );
     return { acces_token: acces_token };
+  }
+
+  // Aux
+  async validateUserCredentials(dto: LoginDto): Promise<User> {
+    const user = await this.usersService.findByEmail(dto.email);
+    if (!user) throw new UnauthorizedException('Invalid credentials');
+
+    const match = await bcrypt.compare(dto.password, user.password);
+    if (!match) throw new UnauthorizedException('Invalid credentials');
+
+    if (!user.isEmailConfirmed)
+      throw new ForbiddenException('Email not confirmed');
+
+    return user;
   }
 }

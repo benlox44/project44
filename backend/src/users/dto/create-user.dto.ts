@@ -1,14 +1,30 @@
-import { IsEmail, MinLength, Matches } from 'class-validator';
+import {
+  IsEmail,
+  MaxLength,
+  Matches,
+  IsStrongPassword,
+  MinLength,
+} from 'class-validator';
 
 export class CreateUserDto {
-  @Matches(/^[A-Za-zÁÉÍÓÚáéíóúÑñ]+(?:\s+[A-Za-zÁÉÍÓÚáéíóúÑñ]+)+$/, {
-    message: 'Full name must include at least a first and last name',
+  @MinLength(2)
+  @MaxLength(50)
+  @Matches(/^(?!.*\s{2,})(?!^\s)(?!.*\s$).*$/, {
+    message: 'Name must not have leading, trailing, or multiple spaces',
   })
   name: string;
 
-  @IsEmail()
+  @IsEmail({}, { message: 'Invalid email format' })
   email: string;
 
-  @MinLength(6, { message: 'Password must be at least 6 characters long' })
+  @MaxLength(100)
+  @IsStrongPassword(
+    {},
+    {
+      message:
+        'Password must be at least 8 characters and include ' +
+        'uppercase, lowercase, number, and symbol',
+    },
+  )
   password: string;
 }

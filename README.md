@@ -22,8 +22,6 @@ docker  compose  up  --build
 
 ##  To do List
 
-- Basic login and registration
-- Change password
 - Forgot password (send recovery email)
 - Require password change after email revert
 - Block account after multiple failed attempts

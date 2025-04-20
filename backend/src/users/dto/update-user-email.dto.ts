@@ -1,9 +1,9 @@
-import { IsEmail, IsNotEmpty } from 'class-validator';
+import { MaxLength, IsEmail } from 'class-validator';
 
 export class UpdateUserEmailDto {
-  @IsEmail()
+  @IsEmail({}, { message: 'Invalid email format' })
   newEmail: string;
 
-  @IsNotEmpty()
+  @MaxLength(100)
   password: string;
 }

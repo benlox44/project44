@@ -7,7 +7,6 @@ import { required } from './env.utils';
   imports: [
     JwtModule.register({
       secret: required('JWT_SECRET'),
-      signOptions: { expiresIn: '1d' },
     }),
   ],
   exports: [JwtModule],

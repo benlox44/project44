@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Body,
-  Query,
-  UnauthorizedException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Controller, Post, Get, Body, Query } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 
@@ -14,26 +6,32 @@ import { LoginDto } from './dto/login.dto';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Get('confirm')
-  async confirmEmail(@Query('token') token: string) {
-    if (!token) throw new BadRequestException('Token is required');
-    return this.authService.confirmEmail(token);
+  @Get('confirm-email')
+  async confirmEmail(
+    @Query('token') token: string,
+  ): Promise<{ message: string }> {
+    await this.authService.confirmEmail(token);
+    return { message: 'Email confirmed successfuly' };
   }
 
   @Get('confirm-email-change')
-  async confirmEmailChange(@Query('token') token: string) {
-    return this.authService.confirmEmailChange(token);
+  async confirmEmailChange(
+    @Query('token') token: string,
+  ): Promise<{ message: string }> {
+    await this.authService.confirmEmailChange(token);
+    return { message: 'Email changed successfully' };
   }
 
-  @Get('revert-email-change')
-  async revertEmailChange(@Query('token') token: string) {
-    return this.authService.revertEmailChange(token);
+  @Get('revert-email')
+  async revertEmail(
+    @Query('token') token: string,
+  ): Promise<{ message: string }> {
+    await this.authService.revertEmail(token);
+    return { message: 'Email reverted successfully' };
   }
 
   @Post('login')
-  async login(@Body() dto: LoginDto) {
-    const user = await this.authService.validateUser(dto.email, dto.password);
-    if (!user) throw new UnauthorizedException();
-    return this.authService.login(user);
+  async login(@Body() dto: LoginDto): Promise<{ acces_token: string }> {
+    return this.authService.login(dto);
   }
 }

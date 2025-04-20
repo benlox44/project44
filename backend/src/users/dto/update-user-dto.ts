@@ -1,9 +1,11 @@
-import { IsOptional, Matches } from 'class-validator';
+import { IsOptional, Matches, MaxLength, MinLength } from 'class-validator';
 
 export class UpdateUserDto {
   @IsOptional()
-  @Matches(/^[A-Za-zÁÉÍÓÚáéíóúÑñ]+(?:\s+[A-Za-zÁÉÍÓÚáéíóúÑñ]+)+$/, {
-    message: 'Name must include at least a first and last name',
+  @MinLength(2)
+  @MaxLength(50)
+  @Matches(/^(?!.*\s{2,})(?!^\s)(?!.*\s$).*$/, {
+    message: 'Name must not have leading, trailing, or multiple spaces',
   })
-  name?: string;
+  name: string;
 }

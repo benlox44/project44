@@ -1,6 +1,17 @@
-import { MinLength } from 'class-validator';
+import { MaxLength, IsStrongPassword } from 'class-validator';
 
 export class UpdateUserPasswordDto {
-  @MinLength(6, { message: 'Password must be at least 6 characters long' })
-  password: string;
+  @MaxLength(100)
+  currentPassword: string;
+
+  @MaxLength(100)
+  @IsStrongPassword(
+    {},
+    {
+      message:
+        'New Password must be at least 8 characters and include ' +
+        'uppercase,lowercase, number, and symbol',
+    },
+  )
+  newPassword: string;
 }
