@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { UsersService } from './users.service';
+
+import { UsersService } from '../users.service';
 
 @Injectable()
 export class UserCleanupService implements OnModuleInit {
@@ -7,7 +8,7 @@ export class UserCleanupService implements OnModuleInit {
 
   constructor(private readonly usersService: UsersService) {}
 
-  async onModuleInit() {
+  async onModuleInit(): Promise<void> {
     const oneDayAgo = new Date(Date.now() - 86_400_000);
     const result =
       await this.usersService.deleteUnconfirmedOlderThan(oneDayAgo);

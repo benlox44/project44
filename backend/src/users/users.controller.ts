@@ -10,14 +10,15 @@ import {
 } from '@nestjs/common';
 import { UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { UsersService } from './users.service';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
+import { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
+
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user-dto';
-import { SafeUser } from './types/safe-user-type';
 import { UpdateUserEmailDto } from './dto/update-user-email.dto';
-import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
-import { JwtPayload } from 'src/auth/types/jwt-payload.interface';
 import { UpdateUserPasswordDto } from './dto/update-user-password.dto';
+import { SafeUser } from './types/safe-user.type';
+import { UsersService } from './users.service';
 
 @Controller('users')
 export class UsersController {

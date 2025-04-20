@@ -1,4 +1,4 @@
-import * as nodemailer from 'nodemailer';
+import nodemailer from 'nodemailer';
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -8,7 +8,11 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const sendEmail = async (to: string, subject: string, html: string) => {
+const sendEmail = async (
+  to: string,
+  subject: string,
+  html: string,
+): Promise<void> => {
   await transporter.sendMail({
     from: `"No Reply" <${process.env.EMAIL_USER}>`,
     to,
@@ -17,7 +21,10 @@ const sendEmail = async (to: string, subject: string, html: string) => {
   });
 };
 
-export const sendConfirmationEmail = async (to: string, token: string) => {
+export const sendConfirmationEmail = async (
+  to: string,
+  token: string,
+): Promise<void> => {
   const link = `http://localhost:3000/auth/confirm-email?token=${token}`;
   const html = `
     <h2>Account Confirmation</h2>
@@ -31,7 +38,7 @@ export const sendConfirmationEmail = async (to: string, token: string) => {
 export const sendConfirmationUpdatedEmail = async (
   to: string,
   token: string,
-) => {
+): Promise<void> => {
   const link = `http://localhost:3000/auth/confirm-email-change?token=${token}`;
   const html = `
     <h2>Email Change Request</h2>
@@ -42,7 +49,10 @@ export const sendConfirmationUpdatedEmail = async (
   await sendEmail(to, '📩 Confirm your new email', html);
 };
 
-export const sendRevertEmailChange = async (to: string, token: string) => {
+export const sendRevertEmailChange = async (
+  to: string,
+  token: string,
+): Promise<void> => {
   const link = `http://localhost:3000/auth/revert-email?token=${token}`;
   const html = `
     <h2>Email Change Detected</h2>

@@ -1,6 +1,6 @@
-import { JwtService } from '@nestjs/jwt';
 import { BadRequestException } from '@nestjs/common';
-import { JwtPayload } from 'src/auth/types/jwt-payload.interface';
+import { JwtService } from '@nestjs/jwt';
+import { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 
 export function signToken(
   jwtService: JwtService,

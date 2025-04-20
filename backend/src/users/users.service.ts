@@ -5,23 +5,24 @@ import {
   ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
-import { DeleteResult, LessThan, Repository } from 'typeorm';
-import { InjectRepository } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcryptjs';
-import { User } from './user.entity';
-import { SafeUser } from './types/safe-user-type';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user-dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import bcrypt from 'bcryptjs';
+import { authConfig } from 'src/common/config/auth.config';
 import {
   sendConfirmationEmail,
   sendConfirmationUpdatedEmail,
-} from 'src/mail/mail.service';
-import { toSafeUser } from 'src/utils/to-safe-user';
-import { signToken } from 'src/utils/jwt';
+} from 'src/common/mail/mail.service';
+import { signToken } from 'src/common/utils/jwt';
+import { toSafeUser } from 'src/common/utils/to-safe-user';
+import { DeleteResult, LessThan, Repository } from 'typeorm';
+
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user-dto';
 import { UpdateUserEmailDto } from './dto/update-user-email.dto';
 import { UpdateUserPasswordDto } from './dto/update-user-password.dto';
-import { authConfig } from 'src/config/auth.config';
+import { User } from './entities/user.entity';
+import { SafeUser } from './types/safe-user.type';
 
 @Injectable()
 export class UsersService {

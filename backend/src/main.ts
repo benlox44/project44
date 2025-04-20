@@ -1,13 +1,12 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
 import { ValidationPipe, Logger } from '@nestjs/common';
-import * as dotenv from 'dotenv';
+import { NestFactory } from '@nestjs/core';
 
-dotenv.config();
+import { AppModule } from './app.module';
+import 'dotenv/config';
 
 const logger = new Logger('Bootstrap');
 
-async function bootstrap() {
+async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(new ValidationPipe());
 

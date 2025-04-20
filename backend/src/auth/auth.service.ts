@@ -6,12 +6,14 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
+import { authConfig } from 'src/common/config/auth.config';
+import { sendRevertEmailChange } from 'src/common/mail/mail.service';
+import { signToken, verifyTokenOrThrow } from 'src/common/utils/jwt';
+import { User } from 'src/users/entities/user.entity';
 import { UsersService } from 'src/users/users.service';
-import { signToken, verifyTokenOrThrow } from 'src/utils/jwt';
-import { sendRevertEmailChange } from 'src/mail/mail.service';
+
 import { LoginDto } from './dto/login.dto';
-import { User } from 'src/users/user.entity';
-import { authConfig } from 'src/config/auth.config';
+
 
 @Injectable()
 export class AuthService {
