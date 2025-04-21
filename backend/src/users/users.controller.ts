@@ -13,7 +13,7 @@ import { UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
-import { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
+import { JwtPayload } from 'src/jwt/types/jwt-payload.type';
 
 import { CreateUserDto } from './dto/create-user.dto';
 import { ResetPasswordAfterRevertDto } from './dto/reset-password-after-revert.dto';
@@ -25,22 +25,24 @@ import { UsersService } from './users.service';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  public constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  async findAll(): Promise<{ data: SafeUser[] }> {
+  public async findAll(): Promise<{ data: SafeUser[] }> {
     const data = await this.usersService.findAll();
     return { data };
   }
 
   @Post()
-  async create(@Body() dto: CreateUserDto): Promise<{ message: string }> {
+  public async create(
+    @Body() dto: CreateUserDto,
+  ): Promise<{ message: string }> {
     await this.usersService.create(dto);
     return { message: 'Confirmation email sent to ' + dto.email };
   }
 
   @Post('reset-password-after-revert')
-  async resetPasswordAfterRevert(
+  public async resetPasswordAfterRevert(
     @Query('token') token: string,
     @Body() dto: ResetPasswordAfterRevertDto,
   ): Promise<{ message: string }> {
@@ -50,7 +52,7 @@ export class UsersController {
 
   @UseGuards(AuthGuard('jwt'))
   @Patch('me')
-  async updateProfile(
+  public async updateProfile(
     @CurrentUser() user: JwtPayload,
     @Body() dto: UpdateUserDto,
   ): Promise<{ message: string }> {
@@ -60,7 +62,7 @@ export class UsersController {
 
   @UseGuards(AuthGuard('jwt'))
   @Patch('me/password')
-  async updatePassword(
+  public async updatePassword(
     @CurrentUser() user: JwtPayload,
     @Body() dto: UpdateUserPasswordDto,
   ): Promise<{ message: string }> {
@@ -70,7 +72,7 @@ export class UsersController {
 
   @UseGuards(AuthGuard('jwt'))
   @Patch('me/email')
-  async requestUpdateEmail(
+  public async requestUpdateEmail(
     @CurrentUser() user: JwtPayload,
     @Body() dto: UpdateUserEmailDto,
   ): Promise<{ message: string }> {
@@ -80,7 +82,7 @@ export class UsersController {
 
   @UseGuards(AuthGuard('jwt'))
   @Delete('me')
-  async deleteMe(
+  public async deleteMe(
     @CurrentUser() user: JwtPayload,
   ): Promise<{ message: string }> {
     await this.usersService.delete(user.sub);
@@ -88,7 +90,7 @@ export class UsersController {
   }
 
   @Delete(':id')
-  async deleteById(
+  public async deleteById(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<{ message: string }> {
     await this.usersService.delete(id);

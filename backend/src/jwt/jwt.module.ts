@@ -1,7 +1,9 @@
 import { Global, Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 
-import { required } from './env.utils';
+import { required } from 'src/common/config/env.config';
+
+import { AppJwtService } from './jwt.service';
 
 @Global()
 @Module({
@@ -10,6 +12,7 @@ import { required } from './env.utils';
       secret: required('JWT_SECRET'),
     }),
   ],
-  exports: [JwtModule],
+  providers: [AppJwtService],
+  exports: [AppJwtService, JwtModule],
 })
 export class GlobalJwtModule {}

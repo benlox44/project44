@@ -2,8 +2,8 @@ import { MaxLength } from 'class-validator';
 
 export class LoginDto {
   @MaxLength(100)
-  email: string;
+  public email: string;
 
   @MaxLength(100)
-  password: string;
+  public password: string;
 }

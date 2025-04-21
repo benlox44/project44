@@ -19,6 +19,10 @@ export default tseslint.config(
         { varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
       ],
       '@typescript-eslint/explicit-function-return-type': ['error'],
+      '@typescript-eslint/explicit-member-accessibility': [
+        'error',
+        { accessibility: 'explicit' },
+      ],
       'import/order': [
         'error',
         {

@@ -4,13 +4,12 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import bcrypt from 'bcryptjs';
 
-import { authConfig } from 'src/common/config/auth.config';
-import { JWT_PURPOSE } from 'src/common/constants/jwt-purpose';
 import { sendRevertEmailChange } from 'src/common/mail/mail.service';
-import { signToken, verifyTokenOrThrow } from 'src/common/utils/jwt';
+import { JWT_EXPIRES_IN } from 'src/jwt/constants/jwt-expires-in.constant';
+import { JWT_PURPOSE } from 'src/jwt/constants/jwt-purpose.constant';
+import { AppJwtService } from 'src/jwt/jwt.service';
 import { User } from 'src/users/entities/user.entity';
 import { UsersService } from 'src/users/users.service';
 
@@ -18,18 +17,14 @@ import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
-  constructor(
+  public constructor(
     private usersService: UsersService,
-    private jwtService: JwtService,
+    private jwtService: AppJwtService,
   ) {}
 
   // Get
-  async confirmEmail(token: string): Promise<void> {
-    const payload = verifyTokenOrThrow(
-      this.jwtService,
-      token,
-      JWT_PURPOSE.CONFIRM_EMAIL,
-    );
+  public async confirmEmail(token: string): Promise<void> {
+    const payload = this.jwtService.verify(token, JWT_PURPOSE.CONFIRM_EMAIL);
     const user = await this.usersService.findByIdOrThrow(payload.sub);
 
     if (user.isEmailConfirmed)
@@ -39,9 +34,8 @@ export class AuthService {
     await this.usersService.update(user);
   }
 
-  async confirmEmailUpdate(token: string): Promise<void> {
-    const payload = verifyTokenOrThrow(
-      this.jwtService,
+  public async confirmEmailUpdate(token: string): Promise<void> {
+    const payload = this.jwtService.verify(
       token,
       JWT_PURPOSE.CONFIRM_EMAIL_UPDATE,
     );
@@ -60,20 +54,15 @@ export class AuthService {
     user.emailChangedAt = new Date();
     await this.usersService.update(user);
 
-    const revertToken = signToken(
-      this.jwtService,
-      { purpose: 'revert-email', sub: user.id, email: user.oldEmail },
-      authConfig.jwt.emailConfirmationExpiresIn,
+    const revertToken = this.jwtService.sign(
+      { purpose: JWT_PURPOSE.REVERT_EMAIL, sub: user.id, email: user.oldEmail },
+      JWT_EXPIRES_IN.REVERT_EMAIL,
     );
     await sendRevertEmailChange(user.oldEmail, revertToken);
   }
 
-  async revertEmail(token: string): Promise<string> {
-    const payload = verifyTokenOrThrow(
-      this.jwtService,
-      token,
-      JWT_PURPOSE.REVERT_EMAIL,
-    );
+  public async revertEmail(token: string): Promise<string> {
+    const payload = this.jwtService.verify(token, JWT_PURPOSE.REVERT_EMAIL);
     const user = await this.usersService.findByIdOrThrow(payload.sub);
 
     if (user.email === payload.email)
@@ -86,31 +75,29 @@ export class AuthService {
     user.emailChangedAt = null;
     await this.usersService.update(user);
 
-    const resetToken = signToken(
-      this.jwtService,
+    const resetToken = this.jwtService.sign(
       {
-        purpose: 'reset-password-after-revert',
+        purpose: JWT_PURPOSE.RESET_PASSWORD_AFTER_REVERT,
         sub: user.id,
         email: user.email,
       },
-      authConfig.jwt.resetPasswordExpiresIn,
+      JWT_EXPIRES_IN.RESET_PASSWORD_AFTER_REVERT,
     );
     return resetToken;
   }
 
   // Post
-  async login(dto: LoginDto): Promise<string> {
+  public async login(dto: LoginDto): Promise<string> {
     const user = await this.validateUserCredentials(dto);
-    const accesToken = signToken(
-      this.jwtService,
-      { purpose: 'session', sub: user.id, email: user.email },
-      authConfig.jwt.accessTokenExpiresIn,
+    const accesToken = this.jwtService.sign(
+      { purpose: JWT_PURPOSE.SESSION, sub: user.id, email: user.email },
+      JWT_EXPIRES_IN.SESSION,
     );
     return accesToken;
   }
 
   // Aux
-  async validateUserCredentials(dto: LoginDto): Promise<User> {
+  private async validateUserCredentials(dto: LoginDto): Promise<User> {
     const user = await this.usersService.findByEmail(dto.email);
     if (!user) throw new UnauthorizedException('Invalid credentials');
 

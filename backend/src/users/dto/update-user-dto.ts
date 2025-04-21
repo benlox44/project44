@@ -7,5 +7,5 @@ export class UpdateUserDto {
   @Matches(/^(?!.*\s{2,})(?!^\s)(?!.*\s$).*$/, {
     message: 'Name must not have leading, trailing, or multiple spaces',
   })
-  name: string;
+  public name: string;
 }

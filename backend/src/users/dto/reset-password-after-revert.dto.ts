@@ -10,5 +10,5 @@ export class ResetPasswordAfterRevertDto {
         'uppercase, lowercase, number, and symbol',
     },
   )
-  newPassword: string;
+  public newPassword: string;
 }

@@ -8,29 +8,29 @@ import {
 @Entity()
 export class User {
   @PrimaryGeneratedColumn()
-  id: number;
+  public id: number;
 
   @CreateDateColumn()
-  createdAt: Date;
+  public createdAt: Date;
 
   @Column()
-  name: string;
+  public name: string;
 
   @Column()
-  password: string;
+  public password: string;
 
   @Column({ unique: true })
-  email: string;
+  public email: string;
 
   @Column({ default: false })
-  isEmailConfirmed: boolean;
+  public isEmailConfirmed: boolean;
 
   @Column({ type: 'varchar', nullable: true })
-  oldEmail: string | null;
+  public oldEmail: string | null;
 
   @Column({ type: 'varchar', nullable: true })
-  newEmail: string | null;
+  public newEmail: string | null;
 
   @Column({ type: 'timestamp', nullable: true })
-  emailChangedAt: Date | null;
+  public emailChangedAt: Date | null;
 }

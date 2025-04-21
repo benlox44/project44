@@ -12,10 +12,10 @@ export class CreateUserDto {
   @Matches(/^(?!.*\s{2,})(?!^\s)(?!.*\s$).*$/, {
     message: 'Name must not have leading, trailing, or multiple spaces',
   })
-  name: string;
+  public name: string;
 
   @IsEmail({}, { message: 'Invalid email format' })
-  email: string;
+  public email: string;
 
   @MaxLength(100)
   @IsStrongPassword(
@@ -26,5 +26,5 @@ export class CreateUserDto {
         'uppercase, lowercase, number, and symbol',
     },
   )
-  password: string;
+  public password: string;
 }

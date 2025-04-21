@@ -5,19 +5,18 @@ import {
   ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import bcrypt from 'bcryptjs';
 import { DeleteResult, LessThan, Repository } from 'typeorm';
 
-import { authConfig } from 'src/common/config/auth.config';
-import { JWT_PURPOSE } from 'src/common/constants/jwt-purpose';
 import {
   sendConfirmationEmail,
   sendConfirmationUpdatedEmail,
 } from 'src/common/mail/mail.service';
-import { signToken, verifyTokenOrThrow } from 'src/common/utils/jwt';
-import { toSafeUser } from 'src/common/utils/to-safe-user';
+import { JWT_EXPIRES_IN } from 'src/jwt/constants/jwt-expires-in.constant';
+import { JWT_PURPOSE } from 'src/jwt/constants/jwt-purpose.constant';
+import { AppJwtService } from 'src/jwt/jwt.service';
+import { toSafeUser } from 'src/users/utils/to-safe-user';
 
 import { CreateUserDto } from './dto/create-user.dto';
 import { ResetPasswordAfterRevertDto } from './dto/reset-password-after-revert.dto';
@@ -29,34 +28,34 @@ import { SafeUser } from './types/safe-user.type';
 
 @Injectable()
 export class UsersService {
-  constructor(
+  public constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
-    private jwtService: JwtService,
+    private jwtService: AppJwtService,
   ) {}
 
   // Get
-  async findAll(): Promise<SafeUser[]> {
+  public async findAll(): Promise<SafeUser[]> {
     const users = await this.usersRepository.find();
     return users.map(toSafeUser);
   }
 
-  async findbyId(id: number): Promise<User | null> {
+  public async findbyId(id: number): Promise<User | null> {
     return this.usersRepository.findOneBy({ id });
   }
 
-  async findByIdOrThrow(id: number): Promise<User> {
+  public async findByIdOrThrow(id: number): Promise<User> {
     const user = await this.findbyId(id);
     if (!user) throw new NotFoundException(`User with ID ${id} not found`);
     return user;
   }
 
-  async findByEmail(email: string): Promise<User | null> {
+  public async findByEmail(email: string): Promise<User | null> {
     return this.usersRepository.findOneBy({ email });
   }
 
   // Post
-  async create(dto: CreateUserDto): Promise<void> {
+  public async create(dto: CreateUserDto): Promise<void> {
     await this.ensureEmailIsAvailable(dto.email);
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
@@ -67,20 +66,18 @@ export class UsersService {
 
     await this.usersRepository.save(user);
 
-    const token = signToken(
-      this.jwtService,
-      { purpose: 'confirm-email', sub: user.id, email: user.email },
-      authConfig.jwt.emailConfirmationExpiresIn,
+    const token = this.jwtService.sign(
+      { purpose: JWT_PURPOSE.CONFIRM_EMAIL, sub: user.id, email: user.email },
+      JWT_EXPIRES_IN.CONFIRM_EMAIL,
     );
     await sendConfirmationEmail(user.email, token);
   }
 
-  async resetPasswordAfterRevert(
+  public async resetPasswordAfterRevert(
     token: string,
     dto: ResetPasswordAfterRevertDto,
   ): Promise<void> {
-    const payload = verifyTokenOrThrow(
-      this.jwtService,
+    const payload = this.jwtService.verify(
       token,
       JWT_PURPOSE.RESET_PASSWORD_AFTER_REVERT,
     );
@@ -97,11 +94,11 @@ export class UsersService {
   }
 
   // Patch
-  async update(user: User): Promise<void> {
+  public async update(user: User): Promise<void> {
     await this.usersRepository.save(user);
   }
 
-  async updateProfile(id: number, dto: UpdateUserDto): Promise<void> {
+  public async updateProfile(id: number, dto: UpdateUserDto): Promise<void> {
     const user = await this.findByIdOrThrow(id);
 
     if (dto.name === user.name)
@@ -114,7 +111,10 @@ export class UsersService {
     await this.usersRepository.save(user);
   }
 
-  async updatePassword(id: number, dto: UpdateUserPasswordDto): Promise<void> {
+  public async updatePassword(
+    id: number,
+    dto: UpdateUserPasswordDto,
+  ): Promise<void> {
     const user = await this.findByIdOrThrow(id);
 
     await this.ensurePasswordIsValid(dto.currentPassword, user.password);
@@ -129,7 +129,10 @@ export class UsersService {
     await this.usersRepository.save(user);
   }
 
-  async requestEmailUpdate(id: number, dto: UpdateUserEmailDto): Promise<void> {
+  public async requestEmailUpdate(
+    id: number,
+    dto: UpdateUserEmailDto,
+  ): Promise<void> {
     const user = await this.findByIdOrThrow(id);
 
     await this.ensurePasswordIsValid(dto.password, user.password);
@@ -152,21 +155,24 @@ export class UsersService {
     user.newEmail = dto.newEmail;
     await this.usersRepository.save(user);
 
-    const token = signToken(
-      this.jwtService,
-      { purpose: 'confirm-email-update', sub: user.id, email: user.newEmail },
-      authConfig.jwt.emailConfirmationExpiresIn,
+    const token = this.jwtService.sign(
+      {
+        purpose: JWT_PURPOSE.CONFIRM_EMAIL_UPDATE,
+        sub: user.id,
+        email: user.newEmail,
+      },
+      JWT_EXPIRES_IN.CONFIRM_EMAIL_UPDATE,
     );
     await sendConfirmationUpdatedEmail(user.newEmail, token);
   }
 
   // Delete
-  async delete(id: number): Promise<void> {
+  public async delete(id: number): Promise<void> {
     await this.findByIdOrThrow(id);
     await this.usersRepository.delete(id);
   }
 
-  async deleteUnconfirmedOlderThan(date: Date): Promise<DeleteResult> {
+  public async deleteUnconfirmedOlderThan(date: Date): Promise<DeleteResult> {
     return await this.usersRepository.delete({
       isEmailConfirmed: false,
       createdAt: LessThan(date),

@@ -2,7 +2,7 @@ import { IsStrongPassword, MaxLength } from 'class-validator';
 
 export class UpdateUserPasswordDto {
   @MaxLength(100)
-  currentPassword: string;
+  public currentPassword: string;
 
   @MaxLength(100)
   @IsStrongPassword(
@@ -13,5 +13,5 @@ export class UpdateUserPasswordDto {
         'uppercase,lowercase, number, and symbol',
     },
   )
-  newPassword: string;
+  public newPassword: string;
 }

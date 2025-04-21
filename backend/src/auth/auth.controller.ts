@@ -5,10 +5,10 @@ import { LoginDto } from './dto/login.dto';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  public constructor(private readonly authService: AuthService) {}
 
   @Get('confirm-email')
-  async confirmEmail(
+  public async confirmEmail(
     @Query('token') token: string,
   ): Promise<{ message: string }> {
     await this.authService.confirmEmail(token);
@@ -16,7 +16,7 @@ export class AuthController {
   }
 
   @Get('confirm-email-update')
-  async confirmEmailUpdate(
+  public async confirmEmailUpdate(
     @Query('token') token: string,
   ): Promise<{ message: string }> {
     await this.authService.confirmEmailUpdate(token);
@@ -24,7 +24,7 @@ export class AuthController {
   }
 
   @Get('revert-email')
-  async revertEmail(
+  public async revertEmail(
     @Query('token') token: string,
   ): Promise<{ reset_token: string }> {
     const reset_token = await this.authService.revertEmail(token);
@@ -32,7 +32,7 @@ export class AuthController {
   }
 
   @Post('login')
-  async login(@Body() dto: LoginDto): Promise<{ access_token: string }> {
+  public async login(@Body() dto: LoginDto): Promise<{ access_token: string }> {
     const access_token = await this.authService.login(dto);
     return { access_token };
   }
