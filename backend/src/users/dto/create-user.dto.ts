@@ -1,8 +1,8 @@
 import {
   IsEmail,
-  MaxLength,
-  Matches,
   IsStrongPassword,
+  Matches,
+  MaxLength,
   MinLength,
 } from 'class-validator';
 

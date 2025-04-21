@@ -1,19 +1,22 @@
 import {
-  Controller,
-  ParseIntPipe,
   Body,
-  Post,
-  Patch,
-  Get,
+  Controller,
   Delete,
+  Get,
   Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
 } from '@nestjs/common';
 import { UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 
 import { CreateUserDto } from './dto/create-user.dto';
+import { ResetPasswordAfterRevertDto } from './dto/reset-password-after-revert.dto';
 import { UpdateUserDto } from './dto/update-user-dto';
 import { UpdateUserEmailDto } from './dto/update-user-email.dto';
 import { UpdateUserPasswordDto } from './dto/update-user-password.dto';
@@ -25,14 +28,24 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  findAll(): Promise<SafeUser[]> {
-    return this.usersService.findAll();
+  async findAll(): Promise<{ data: SafeUser[] }> {
+    const data = await this.usersService.findAll();
+    return { data };
   }
 
   @Post()
   async create(@Body() dto: CreateUserDto): Promise<{ message: string }> {
     await this.usersService.create(dto);
     return { message: 'Confirmation email sent to ' + dto.email };
+  }
+
+  @Post('reset-password-after-revert')
+  async resetPasswordAfterRevert(
+    @Query('token') token: string,
+    @Body() dto: ResetPasswordAfterRevertDto,
+  ): Promise<{ message: string }> {
+    await this.usersService.resetPasswordAfterRevert(token, dto);
+    return { message: 'Password changed successfully' };
   }
 
   @UseGuards(AuthGuard('jwt'))

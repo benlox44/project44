@@ -1,6 +1,9 @@
 import { BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+
 import { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
+
+import { JwtPurpose } from '../constants/jwt-purpose';
 
 export function signToken(
   jwtService: JwtService,
@@ -13,10 +16,22 @@ export function signToken(
 export function verifyTokenOrThrow(
   jwtService: JwtService,
   token: string,
+  purpose: JwtPurpose,
 ): JwtPayload {
+  if (!token || token.trim() === '') {
+    throw new BadRequestException('Token is required');
+  }
+
+  let payload: JwtPayload;
+
   try {
-    return jwtService.verify<JwtPayload>(token);
-  } catch (_err) {
+    payload = jwtService.verify<JwtPayload>(token);
+  } catch {
     throw new BadRequestException('Invalid or expired token');
   }
+
+  if (!payload.purpose || payload.purpose !== purpose)
+    throw new BadRequestException('Invalid token purpose');
+
+  return payload;
 }

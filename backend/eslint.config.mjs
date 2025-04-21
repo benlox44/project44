@@ -22,24 +22,16 @@ export default tseslint.config(
       'import/order': [
         'error',
         {
-          groups: [
-            'builtin',
-            'external',
-            'internal',
-            'parent',
-            'sibling',
-            'index',
-            'object',
-          ],
+          groups: ['builtin', 'external', 'internal'],
           pathGroups: [
-            { pattern: '@nestjs/**', group: 'external', position: 'before' },
-            { pattern: '@/**', group: 'internal' },
+            { pattern: 'src/**', group: 'internal', position: 'after' },
+            { pattern: './**', group: 'internal', position: 'after' },
           ],
+          pathGroupsExcludedImportTypes: ['builtin'],
           'newlines-between': 'always',
           alphabetize: { order: 'asc', caseInsensitive: true },
         },
       ],
-      'import/newline-after-import': 'error',
     },
   },
 );

@@ -1,4 +1,4 @@
-import { MaxLength, IsEmail } from 'class-validator';
+import { IsEmail, MaxLength } from 'class-validator';
 
 export class UpdateUserEmailDto {
   @IsEmail({}, { message: 'Invalid email format' })

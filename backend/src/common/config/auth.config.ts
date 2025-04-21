@@ -1,7 +1,8 @@
 export const authConfig = {
   jwt: {
-    accessTokenExpiresIn: '7d',
+    resetPasswordExpiresIn: '1h',
     emailConfirmationExpiresIn: '1d',
+    accessTokenExpiresIn: '7d',
     emailRevertExpiresIn: '30d',
   },
 };

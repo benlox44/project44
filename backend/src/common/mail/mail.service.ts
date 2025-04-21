@@ -39,7 +39,7 @@ export const sendConfirmationUpdatedEmail = async (
   to: string,
   token: string,
 ): Promise<void> => {
-  const link = `http://localhost:3000/auth/confirm-email-change?token=${token}`;
+  const link = `http://localhost:3000/auth/confirm-email-update?token=${token}`;
   const html = `
     <h2>Email Change Request</h2>
     <p>We received a request to change your email. Click the link below to confirm it:</p>

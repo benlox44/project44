@@ -1,7 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+
 import { required } from 'src/common/config/env.utils';
+import { JWT_PURPOSE } from 'src/common/constants/jwt-purpose';
 
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
 
@@ -16,6 +18,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   validate(payload: JwtPayload): JwtPayload {
-    return { sub: payload.sub, email: payload.email };
+    if (payload.purpose !== JWT_PURPOSE.SESSION)
+      throw new UnauthorizedException('Invalid token purpose');
+    return payload;
   }
 }

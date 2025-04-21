@@ -8,16 +8,19 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import bcrypt from 'bcryptjs';
+import { DeleteResult, LessThan, Repository } from 'typeorm';
+
 import { authConfig } from 'src/common/config/auth.config';
+import { JWT_PURPOSE } from 'src/common/constants/jwt-purpose';
 import {
   sendConfirmationEmail,
   sendConfirmationUpdatedEmail,
 } from 'src/common/mail/mail.service';
-import { signToken } from 'src/common/utils/jwt';
+import { signToken, verifyTokenOrThrow } from 'src/common/utils/jwt';
 import { toSafeUser } from 'src/common/utils/to-safe-user';
-import { DeleteResult, LessThan, Repository } from 'typeorm';
 
 import { CreateUserDto } from './dto/create-user.dto';
+import { ResetPasswordAfterRevertDto } from './dto/reset-password-after-revert.dto';
 import { UpdateUserDto } from './dto/update-user-dto';
 import { UpdateUserEmailDto } from './dto/update-user-email.dto';
 import { UpdateUserPasswordDto } from './dto/update-user-password.dto';
@@ -66,11 +69,31 @@ export class UsersService {
 
     const token = signToken(
       this.jwtService,
-      { sub: user.id, email: user.email },
+      { purpose: 'confirm-email', sub: user.id, email: user.email },
       authConfig.jwt.emailConfirmationExpiresIn,
     );
-
     await sendConfirmationEmail(user.email, token);
+  }
+
+  async resetPasswordAfterRevert(
+    token: string,
+    dto: ResetPasswordAfterRevertDto,
+  ): Promise<void> {
+    const payload = verifyTokenOrThrow(
+      this.jwtService,
+      token,
+      JWT_PURPOSE.RESET_PASSWORD_AFTER_REVERT,
+    );
+    const user = await this.findByIdOrThrow(payload.sub);
+
+    const match = await bcrypt.compare(dto.newPassword, user.password);
+    if (match)
+      throw new ConflictException(
+        'New password must be different from the current one',
+      );
+
+    user.password = await bcrypt.hash(dto.newPassword, 10);
+    await this.usersRepository.save(user);
   }
 
   // Patch
@@ -83,7 +106,7 @@ export class UsersService {
 
     if (dto.name === user.name)
       throw new BadRequestException(
-        'The new name must be different from the current one',
+        'New name must be different from the current one',
       );
 
     if (dto.name) user.name = dto.name;
@@ -95,6 +118,12 @@ export class UsersService {
     const user = await this.findByIdOrThrow(id);
 
     await this.ensurePasswordIsValid(dto.currentPassword, user.password);
+
+    const match = await bcrypt.compare(dto.newPassword, user.password);
+    if (match)
+      throw new ConflictException(
+        'New password must be different from the current one',
+      );
 
     user.password = await bcrypt.hash(dto.newPassword, 10);
     await this.usersRepository.save(user);
@@ -115,12 +144,17 @@ export class UsersService {
       );
     }
 
+    if (dto.newEmail === user.email)
+      throw new ConflictException(
+        'New email must be different from the current one',
+      );
+
     user.newEmail = dto.newEmail;
     await this.usersRepository.save(user);
 
     const token = signToken(
       this.jwtService,
-      { sub: user.id, email: user.newEmail },
+      { purpose: 'confirm-email-update', sub: user.id, email: user.newEmail },
       authConfig.jwt.emailConfirmationExpiresIn,
     );
     await sendConfirmationUpdatedEmail(user.newEmail, token);
