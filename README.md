@@ -22,8 +22,12 @@ docker  compose  up  --build
 
 ##  To do List
 
+- Generate tokens with jti (unique ID)
+- Save in Redis when it's used
+- Check that it isn't already in Redis before accepting token 
+
+
 - Forgot password (send recovery email)
-- Require password change after email revert
 - Block account after multiple failed attempts
 - Roles and permissions
 
