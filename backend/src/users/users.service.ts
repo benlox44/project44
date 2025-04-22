@@ -9,29 +9,29 @@ import { InjectRepository } from '@nestjs/typeorm';
 import bcrypt from 'bcryptjs';
 import { DeleteResult, LessThan, Repository } from 'typeorm';
 
-import {
-  sendConfirmationEmail,
-  sendConfirmationUpdatedEmail,
-} from 'src/common/mail/mail.service';
 import { JWT_EXPIRES_IN } from 'src/jwt/constants/jwt-expires-in.constant';
 import { JWT_PURPOSE } from 'src/jwt/constants/jwt-purpose.constant';
 import { AppJwtService } from 'src/jwt/jwt.service';
-import { toSafeUser } from 'src/users/utils/to-safe-user';
+import { MailService } from 'src/mail/mail.service';
 
 import { CreateUserDto } from './dto/create-user.dto';
+import { RequestConfirmationEmail } from './dto/request-confirmation-email.dto';
+import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
 import { ResetPasswordAfterRevertDto } from './dto/reset-password-after-revert.dto';
 import { UpdateUserDto } from './dto/update-user-dto';
 import { UpdateUserEmailDto } from './dto/update-user-email.dto';
 import { UpdateUserPasswordDto } from './dto/update-user-password.dto';
 import { User } from './entities/user.entity';
 import { SafeUser } from './types/safe-user.type';
+import { toSafeUser } from './utils/to-safe-user';
 
 @Injectable()
 export class UsersService {
   public constructor(
     @InjectRepository(User)
-    private usersRepository: Repository<User>,
-    private jwtService: AppJwtService,
+    private readonly usersRepository: Repository<User>,
+    private readonly jwtService: AppJwtService,
+    private readonly mailService: MailService,
   ) {}
 
   // Get
@@ -70,14 +70,44 @@ export class UsersService {
       { purpose: JWT_PURPOSE.CONFIRM_EMAIL, sub: user.id, email: user.email },
       JWT_EXPIRES_IN.CONFIRM_EMAIL,
     );
-    await sendConfirmationEmail(user.email, token);
+    await this.mailService.sendConfirmationEmail(user.email, token);
+  }
+
+  public async requestConfirmationEmail(
+    dto: RequestConfirmationEmail,
+  ): Promise<void> {
+    const user = await this.findByEmail(dto.email);
+    if (!user || user.isEmailConfirmed) return;
+
+    const token = this.jwtService.sign(
+      { purpose: JWT_PURPOSE.CONFIRM_EMAIL, sub: user.id, email: user.email },
+      JWT_EXPIRES_IN.CONFIRM_EMAIL,
+    );
+    await this.mailService.sendConfirmationEmail(user.email, token);
+  }
+
+  public async requestPasswordReset(
+    dto: RequestPasswordResetDto,
+  ): Promise<void> {
+    const user = await this.findByEmail(dto.email);
+    if (!user || !user.isEmailConfirmed) return;
+
+    const token = this.jwtService.sign(
+      {
+        purpose: JWT_PURPOSE.RESET_PASSWORD,
+        sub: user.id,
+        email: user.email,
+      },
+      JWT_EXPIRES_IN.RESET_PASSWORD,
+    );
+    await this.mailService.sendPasswordReset(user.email, token);
   }
 
   public async resetPasswordAfterRevert(
     token: string,
     dto: ResetPasswordAfterRevertDto,
   ): Promise<void> {
-    const payload = this.jwtService.verify(
+    const payload = await this.jwtService.verify(
       token,
       JWT_PURPOSE.RESET_PASSWORD_AFTER_REVERT,
     );
@@ -91,6 +121,10 @@ export class UsersService {
 
     user.password = await bcrypt.hash(dto.newPassword, 10);
     await this.usersRepository.save(user);
+    await this.jwtService.markAsUsed(
+      payload.jti,
+      JWT_EXPIRES_IN.RESET_PASSWORD,
+    );
   }
 
   // Patch
@@ -163,7 +197,7 @@ export class UsersService {
       },
       JWT_EXPIRES_IN.CONFIRM_EMAIL_UPDATE,
     );
-    await sendConfirmationUpdatedEmail(user.newEmail, token);
+    await this.mailService.sendConfirmationUpdatedEmail(user.newEmail, token);
   }
 
   // Delete

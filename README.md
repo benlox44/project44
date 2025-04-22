@@ -22,19 +22,14 @@ docker  compose  up  --build
 
 ##  To do List
 
-- Generate tokens with jti (unique ID)
-- Save in Redis when it's used
-- Check that it isn't already in Redis before accepting token 
-
-
-- Forgot password (send recovery email)
 - Block account after multiple failed attempts
 - Roles and permissions
 
 ##  Stack (so far)
 
-- Backend: NestJs, TypeScrypt
-- Database: PostgreSQL 15
-- Auth: JWT, Email confirmation
-- DevOps: Docker + Docker Compose
-- Admin: Adminer (for managing PostgreSQL)
+- **Backend**: NestJS + TypeScript
+- **Database**: PostgreSQL 15
+- **Auth**: JWT + Email confirmation + JTI token invalidation
+- **Cache & Token Registry**: Redis (for single-use tokens via JTI)
+- **DevOps**: Docker + Docker Compose
+- **Admin Tools**: Adminer (PostgreSQL)

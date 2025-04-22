@@ -8,6 +8,7 @@ services:
       - ./backend/.env
     depends_on:
       - db
+      - redis
     volumes:
       - ./backend:/app
     command: npm run start:dev
@@ -22,6 +23,12 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
 
   adminer:
     image: adminer

@@ -1,7 +1,11 @@
 import { JwtPurpose } from '../constants/jwt-purpose.constant';
 
-export type JwtPayload = {
+export type JwtPayloadBase = {
   purpose: JwtPurpose;
   sub: number;
   email: string;
+};
+
+export type JwtPayload = JwtPayloadBase & {
+  jti: string;
 };

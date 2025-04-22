@@ -28,13 +28,3 @@ npm  run  lint:check  # Only check without modifying files
 ```bash
 npm  run  test
 ```
-
-## JWT Payload Purposes
-
-| `purpose`                     | Description                                        |
-| ----------------------------- | -------------------------------------------------- |
-| `session`                     | Main access token used for authenticated sessions  |
-| `confirm-email`               | Used to confirm a user's email after registration  |
-| `confirm-email-update`        | Used to confirm a newly requested email address    |
-| `revert-email`                | Used to revert the email address to a previous one |
-| `reset-password-after-revert` | Forces a password reset after an email reversion   |

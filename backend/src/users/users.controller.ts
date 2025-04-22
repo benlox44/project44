@@ -12,10 +12,12 @@ import {
 import { UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 
-import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
+import { CurrentUser } from 'src/jwt/decorators/current-user.decorator';
 import { JwtPayload } from 'src/jwt/types/jwt-payload.type';
 
 import { CreateUserDto } from './dto/create-user.dto';
+import { RequestConfirmationEmail } from './dto/request-confirmation-email.dto';
+import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
 import { ResetPasswordAfterRevertDto } from './dto/reset-password-after-revert.dto';
 import { UpdateUserDto } from './dto/update-user-dto';
 import { UpdateUserEmailDto } from './dto/update-user-email.dto';
@@ -39,6 +41,26 @@ export class UsersController {
   ): Promise<{ message: string }> {
     await this.usersService.create(dto);
     return { message: 'Confirmation email sent to ' + dto.email };
+  }
+
+  @Post('request-confirmation-email')
+  public async requestConfirmationEmail(
+    @Body() dto: RequestConfirmationEmail,
+  ): Promise<{ message: string }> {
+    await this.usersService.requestConfirmationEmail(dto);
+    return {
+      message: 'If your email is registered and not confirmed, a link was sent',
+    };
+  }
+
+  @Post('request-password-reset')
+  public async requestPasswordReset(
+    @Body() dto: RequestPasswordResetDto,
+  ): Promise<{ message: string }> {
+    await this.usersService.requestPasswordReset(dto);
+    return {
+      message: 'If your email is registered and is confirmed, a link was sent',
+    };
   }
 
   @Post('reset-password-after-revert')

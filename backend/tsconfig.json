@@ -28,5 +28,6 @@
     "skipLibCheck": true,
     "moduleResolution": "node",
   },
+  "include": ["src", "src/mail/templates/**/*"],
   "exclude": ["node_modules", "dist", "**/*.spec.ts"],
 }

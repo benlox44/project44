@@ -1,48 +1,53 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 import bcrypt from 'bcryptjs';
 
-import { sendRevertEmailChange } from 'src/common/mail/mail.service';
 import { JWT_EXPIRES_IN } from 'src/jwt/constants/jwt-expires-in.constant';
 import { JWT_PURPOSE } from 'src/jwt/constants/jwt-purpose.constant';
 import { AppJwtService } from 'src/jwt/jwt.service';
+import { MailService } from 'src/mail/mail.service';
 import { User } from 'src/users/entities/user.entity';
 import { UsersService } from 'src/users/users.service';
 
 import { LoginDto } from './dto/login.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class AuthService {
   public constructor(
-    private usersService: UsersService,
-    private jwtService: AppJwtService,
+    private readonly usersService: UsersService,
+    private readonly jwtService: AppJwtService,
+    private readonly mailService: MailService,
   ) {}
 
   // Get
   public async confirmEmail(token: string): Promise<void> {
-    const payload = this.jwtService.verify(token, JWT_PURPOSE.CONFIRM_EMAIL);
+    const payload = await this.jwtService.verify(
+      token,
+      JWT_PURPOSE.CONFIRM_EMAIL,
+    );
     const user = await this.usersService.findByIdOrThrow(payload.sub);
 
     if (user.isEmailConfirmed)
-      throw new BadRequestException('Email already confirmed');
+      throw new BadRequestException('Email Already confirmed');
 
     user.isEmailConfirmed = true;
     await this.usersService.update(user);
+    await this.jwtService.markAsUsed(payload.jti, JWT_EXPIRES_IN.CONFIRM_EMAIL);
   }
 
   public async confirmEmailUpdate(token: string): Promise<void> {
-    const payload = this.jwtService.verify(
+    const payload = await this.jwtService.verify(
       token,
       JWT_PURPOSE.CONFIRM_EMAIL_UPDATE,
     );
     const user = await this.usersService.findByIdOrThrow(payload.sub);
 
-    if (user.email === payload.email)
-      throw new BadRequestException('Email already changed');
     if (user.newEmail !== payload.email)
       throw new BadRequestException(
         'This confirmation link is no longer valid',
@@ -58,32 +63,37 @@ export class AuthService {
       { purpose: JWT_PURPOSE.REVERT_EMAIL, sub: user.id, email: user.oldEmail },
       JWT_EXPIRES_IN.REVERT_EMAIL,
     );
-    await sendRevertEmailChange(user.oldEmail, revertToken);
+    await this.mailService.sendRevertEmailChange(user.oldEmail, revertToken);
+    await this.jwtService.markAsUsed(
+      payload.jti,
+      JWT_EXPIRES_IN.CONFIRM_EMAIL_UPDATE,
+    );
   }
 
   public async revertEmail(token: string): Promise<string> {
-    const payload = this.jwtService.verify(token, JWT_PURPOSE.REVERT_EMAIL);
+    const payload = await this.jwtService.verify(
+      token,
+      JWT_PURPOSE.REVERT_EMAIL,
+    );
     const user = await this.usersService.findByIdOrThrow(payload.sub);
 
-    if (user.email === payload.email)
-      throw new BadRequestException('Email revert already done');
-    if (user.oldEmail !== payload.email)
-      throw new BadRequestException('This revert link is no longer valid');
-
+    /** Token expires in 30d, and change is allowed only once per 30d
+    no extra checks needed */
     user.email = user.oldEmail!;
     user.oldEmail = null;
     user.emailChangedAt = null;
-    await this.usersService.update(user);
 
-    const resetToken = this.jwtService.sign(
+    await this.usersService.update(user);
+    await this.jwtService.markAsUsed(payload.jti, JWT_EXPIRES_IN.REVERT_EMAIL);
+
+    return this.jwtService.sign(
       {
         purpose: JWT_PURPOSE.RESET_PASSWORD_AFTER_REVERT,
         sub: user.id,
         email: user.email,
       },
-      JWT_EXPIRES_IN.RESET_PASSWORD_AFTER_REVERT,
+      JWT_EXPIRES_IN.RESET_PASSWORD,
     );
-    return resetToken;
   }
 
   // Post
@@ -94,6 +104,30 @@ export class AuthService {
       JWT_EXPIRES_IN.SESSION,
     );
     return accesToken;
+  }
+
+  public async resetPassword(
+    token: string,
+    dto: ResetPasswordDto,
+  ): Promise<void> {
+    const payload = await this.jwtService.verify(
+      token,
+      JWT_PURPOSE.RESET_PASSWORD,
+    );
+    const user = await this.usersService.findByIdOrThrow(payload.sub);
+
+    const match = await bcrypt.compare(dto.newPassword, user.password);
+    if (match)
+      throw new ConflictException(
+        'New password must be different from the current one',
+      );
+
+    user.password = await bcrypt.hash(dto.newPassword, 10);
+    await this.usersService.update(user);
+    await this.jwtService.markAsUsed(
+      payload.jti,
+      JWT_EXPIRES_IN.RESET_PASSWORD,
+    );
   }
 
   // Aux
