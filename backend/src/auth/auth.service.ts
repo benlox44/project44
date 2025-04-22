@@ -7,10 +7,12 @@ import {
 } from '@nestjs/common';
 import bcrypt from 'bcryptjs';
 
-import { JWT_EXPIRES_IN } from 'src/jwt/constants/jwt-expires-in.constant';
-import { JWT_PURPOSE } from 'src/jwt/constants/jwt-purpose.constant';
+import { JWT_EXPIRES_IN } from 'src/common/constants/jwt-expires-in.constant';
+import { JWT_PURPOSE } from 'src/common/constants/jwt-purpose.constant';
+import { LOGIN_BLOCK } from 'src/common/constants/login-block.constant';
 import { AppJwtService } from 'src/jwt/jwt.service';
 import { MailService } from 'src/mail/mail.service';
+import { UsersRedisService } from 'src/redis/services/users-redis.service';
 import { User } from 'src/users/entities/user.entity';
 import { UsersService } from 'src/users/users.service';
 
@@ -23,6 +25,7 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly jwtService: AppJwtService,
     private readonly mailService: MailService,
+    private readonly usersRedisService: UsersRedisService,
   ) {}
 
   // Get
@@ -96,6 +99,26 @@ export class AuthService {
     );
   }
 
+  public async unlockAccount(token: string): Promise<void> {
+    const payload = await this.jwtService.verify(
+      token,
+      JWT_PURPOSE.UNLOCK_ACCOUNT,
+    );
+    const user = await this.usersService.findByIdOrThrow(payload.sub);
+
+    if (!user.isLocked) {
+      throw new BadRequestException('Account is already unlocked');
+    }
+
+    user.isLocked = false;
+    await this.usersService.update(user);
+
+    await this.jwtService.markAsUsed(
+      payload.jti,
+      JWT_EXPIRES_IN.UNLOCK_ACCOUNT,
+    );
+  }
+
   // Post
   public async login(dto: LoginDto): Promise<string> {
     const user = await this.validateUserCredentials(dto);
@@ -135,8 +158,35 @@ export class AuthService {
     const user = await this.usersService.findByEmail(dto.email);
     if (!user) throw new UnauthorizedException('Invalid credentials');
 
+    if (user.isLocked) throw new ForbiddenException('Account is locked');
+
     const match = await bcrypt.compare(dto.password, user.password);
-    if (!match) throw new UnauthorizedException('Invalid credentials');
+
+    if (!match) {
+      const failures = await this.usersRedisService.incrementFailures(
+        user.email,
+      );
+
+      if (failures >= LOGIN_BLOCK.MAX_FAILURES) {
+        await this.usersService.lock(user.id);
+
+        const token = this.jwtService.sign(
+          {
+            purpose: JWT_PURPOSE.UNLOCK_ACCOUNT,
+            sub: user.id,
+            email: user.email,
+          },
+          JWT_EXPIRES_IN.UNLOCK_ACCOUNT,
+        );
+        await this.mailService.sendUnlockAccount(user.email, token);
+
+        throw new ForbiddenException(
+          'Account has been locked due to failed attempts',
+        );
+      }
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    await this.usersRedisService.resetFailures(user.email);
 
     if (!user.isEmailConfirmed)
       throw new ForbiddenException('Email not confirmed');

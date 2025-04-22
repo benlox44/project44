@@ -78,4 +78,12 @@ export class MailService {
     );
     await this.sendEmail(to, '🔐 Reset your password', html);
   }
+
+  public async sendUnlockAccount(to: string, token: string): Promise<void> {
+    const html = await this.loadTemplate(
+      'unlock-account.html',
+      `unlock-account?token=${token}`,
+    );
+    await this.sendEmail(to, '🔓 Unlock your account', html);
+  }
 }

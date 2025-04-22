@@ -32,6 +32,14 @@ export class AuthController {
     return { reset_token };
   }
 
+  @Get('unlock-account')
+  public async unlockAccount(
+    @Query('token') token: string,
+  ): Promise<{ message: string }> {
+    await this.authService.unlockAccount(token);
+    return { message: 'Your account has been unlocked. You can now log in' };
+  }
+
   @Post('login')
   public async login(@Body() dto: LoginDto): Promise<{ access_token: string }> {
     const access_token = await this.authService.login(dto);

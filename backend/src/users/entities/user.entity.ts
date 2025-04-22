@@ -13,6 +13,9 @@ export class User {
   @CreateDateColumn()
   public createdAt: Date;
 
+  @Column({ default: false })
+  public isLocked: boolean;
+
   @Column()
   public name: string;
 

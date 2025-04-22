@@ -18,6 +18,7 @@ import { JwtPayload } from 'src/jwt/types/jwt-payload.type';
 import { CreateUserDto } from './dto/create-user.dto';
 import { RequestConfirmationEmail } from './dto/request-confirmation-email.dto';
 import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
+import { RequestUnlockDto } from './dto/request-unlock.dto';
 import { ResetPasswordAfterRevertDto } from './dto/reset-password-after-revert.dto';
 import { UpdateUserDto } from './dto/update-user-dto';
 import { UpdateUserEmailDto } from './dto/update-user-email.dto';
@@ -70,6 +71,16 @@ export class UsersController {
   ): Promise<{ message: string }> {
     await this.usersService.resetPasswordAfterRevert(token, dto);
     return { message: 'Password changed successfully' };
+  }
+
+  @Post('request-unlock')
+  public async requestUnlock(
+    @Body() dto: RequestUnlockDto,
+  ): Promise<{ message: string }> {
+    await this.usersService.requestUnlock(dto);
+    return {
+      message: 'If your email is registered and is locked, a link was sent',
+    };
   }
 
   @UseGuards(AuthGuard('jwt'))

@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
 
-import { JwtRedisService } from './jwt-redis.service';
 import { RedisProvider } from './redis.provider';
+import { JwtRedisService } from './services/jwt-redis.service';
+import { UsersRedisService } from './services/users-redis.service';
 
 @Module({
-  providers: [RedisProvider, JwtRedisService],
-  exports: [RedisProvider, JwtRedisService],
+  providers: [RedisProvider, JwtRedisService, UsersRedisService],
+  exports: [RedisProvider, JwtRedisService, UsersRedisService],
 })
 export class RedisModule {}

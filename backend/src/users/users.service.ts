@@ -9,14 +9,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import bcrypt from 'bcryptjs';
 import { DeleteResult, LessThan, Repository } from 'typeorm';
 
-import { JWT_EXPIRES_IN } from 'src/jwt/constants/jwt-expires-in.constant';
-import { JWT_PURPOSE } from 'src/jwt/constants/jwt-purpose.constant';
+import { JWT_EXPIRES_IN } from 'src/common/constants/jwt-expires-in.constant';
+import { JWT_PURPOSE } from 'src/common/constants/jwt-purpose.constant';
 import { AppJwtService } from 'src/jwt/jwt.service';
 import { MailService } from 'src/mail/mail.service';
 
 import { CreateUserDto } from './dto/create-user.dto';
 import { RequestConfirmationEmail } from './dto/request-confirmation-email.dto';
 import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
+import { RequestUnlockDto } from './dto/request-unlock.dto';
 import { ResetPasswordAfterRevertDto } from './dto/reset-password-after-revert.dto';
 import { UpdateUserDto } from './dto/update-user-dto';
 import { UpdateUserEmailDto } from './dto/update-user-email.dto';
@@ -127,6 +128,21 @@ export class UsersService {
     );
   }
 
+  public async requestUnlock(dto: RequestUnlockDto): Promise<void> {
+    const user = await this.findByEmail(dto.email);
+    if (!user || !user.isLocked) return;
+
+    const token = this.jwtService.sign(
+      {
+        purpose: JWT_PURPOSE.UNLOCK_ACCOUNT,
+        sub: user.id,
+        email: user.email,
+      },
+      JWT_EXPIRES_IN.UNLOCK_ACCOUNT,
+    );
+    await this.mailService.sendUnlockAccount(user.email, token);
+  }
+
   // Patch
   public async update(user: User): Promise<void> {
     await this.usersRepository.save(user);
@@ -214,6 +230,12 @@ export class UsersService {
   }
 
   // Aux
+  public async lock(id: number): Promise<void> {
+    const user = await this.findByIdOrThrow(id);
+    user.isLocked = true;
+    await this.usersRepository.save(user);
+  }
+
   private async ensureEmailIsAvailable(email: string): Promise<void> {
     const user = await this.findByEmail(email);
     if (user) throw new ConflictException('Email is already registered');

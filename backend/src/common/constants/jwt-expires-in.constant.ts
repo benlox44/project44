@@ -1,4 +1,5 @@
 export const JWT_EXPIRES_IN = {
+  UNLOCK_ACCOUNT: '7d',
   RESET_PASSWORD: '1h',
   CONFIRM_EMAIL: '1d',
   CONFIRM_EMAIL_UPDATE: '1d',
