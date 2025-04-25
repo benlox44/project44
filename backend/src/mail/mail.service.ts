@@ -4,17 +4,18 @@ import path from 'path';
 import { Injectable } from '@nestjs/common';
 import nodemailer from 'nodemailer';
 
+import { required } from 'src/common/config/env.config';
+
 @Injectable()
 export class MailService {
   private readonly transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
+      user: required('EMAIL_USER'),
+      pass: required('EMAIL_PASS'),
     },
   });
-
-  private readonly baseUrl = 'http://localhost:3000';
+  private readonly baseUrl = required('BASE_URL');
 
   private async loadTemplate(name: string, token: string): Promise<string> {
     // const templatePath = path.join(__dirname, 'templates', name); PROD!

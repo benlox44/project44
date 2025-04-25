@@ -13,18 +13,31 @@ import { JWT_EXPIRES_IN } from 'src/common/constants/jwt-expires-in.constant';
 import { JWT_PURPOSE } from 'src/common/constants/jwt-purpose.constant';
 import { AppJwtService } from 'src/jwt/jwt.service';
 import { MailService } from 'src/mail/mail.service';
+import { toSafeUser } from 'src/users/utils/to-safe-user';
 
-import { CreateUserDto } from './dto/create-user.dto';
-import { RequestConfirmationEmail } from './dto/request-confirmation-email.dto';
-import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
-import { RequestUnlockDto } from './dto/request-unlock.dto';
-import { ResetPasswordAfterRevertDto } from './dto/reset-password-after-revert.dto';
 import { UpdateUserDto } from './dto/update-user-dto';
 import { UpdateUserEmailDto } from './dto/update-user-email.dto';
 import { UpdateUserPasswordDto } from './dto/update-user-password.dto';
 import { User } from './entities/user.entity';
 import { SafeUser } from './types/safe-user.type';
-import { toSafeUser } from './utils/to-safe-user';
+
+/**
+ * UsersService
+ *
+ * Service responsible for managing user entities.
+ * Handles user retrieval, profile updates, password changes,
+ * email change requests, account locking, and user deletion.
+ *
+ * Exposes methods grouped by type:
+ * - GET methods: Fetch user(s) by ID or email.
+ * - SAVE methods: Persist new or updated user entities.
+ * - PATCH methods: Update user-specific fields.
+ * - DELETE methods: Remove user entities or clean up old unconfirmed accounts.
+ * - AUXILIARY methods: Internal validation utilities (email uniqueness, password checks).
+ *
+ * This service is intended to be used by controllers handling user operations,
+ * and by authentication flows needing direct access to user data.
+ */
 
 @Injectable()
 export class UsersService {
@@ -35,119 +48,32 @@ export class UsersService {
     private readonly mailService: MailService,
   ) {}
 
-  // Get
+  // ===== GET METHODS =====
   public async findAll(): Promise<SafeUser[]> {
     const users = await this.usersRepository.find();
     return users.map(toSafeUser);
   }
 
-  public async findbyId(id: number): Promise<User | null> {
+  public findById(id: number): Promise<User | null> {
     return this.usersRepository.findOneBy({ id });
   }
 
   public async findByIdOrThrow(id: number): Promise<User> {
-    const user = await this.findbyId(id);
+    const user = await this.findById(id);
     if (!user) throw new NotFoundException(`User with ID ${id} not found`);
     return user;
   }
 
-  public async findByEmail(email: string): Promise<User | null> {
+  public findByEmail(email: string): Promise<User | null> {
     return this.usersRepository.findOneBy({ email });
   }
 
-  // Post
-  public async create(dto: CreateUserDto): Promise<void> {
-    await this.ensureEmailIsAvailable(dto.email);
-
-    const hashedPassword = await bcrypt.hash(dto.password, 10);
-    const user = this.usersRepository.create({
-      ...dto,
-      password: hashedPassword,
-    });
-
-    await this.usersRepository.save(user);
-
-    const token = this.jwtService.sign(
-      { purpose: JWT_PURPOSE.CONFIRM_EMAIL, sub: user.id, email: user.email },
-      JWT_EXPIRES_IN.CONFIRM_EMAIL,
-    );
-    await this.mailService.sendConfirmationEmail(user.email, token);
+  // ===== POST / SAVE METHODS =====
+  public save(user: User): Promise<User> {
+    return this.usersRepository.save(user);
   }
 
-  public async requestConfirmationEmail(
-    dto: RequestConfirmationEmail,
-  ): Promise<void> {
-    const user = await this.findByEmail(dto.email);
-    if (!user || user.isEmailConfirmed) return;
-
-    const token = this.jwtService.sign(
-      { purpose: JWT_PURPOSE.CONFIRM_EMAIL, sub: user.id, email: user.email },
-      JWT_EXPIRES_IN.CONFIRM_EMAIL,
-    );
-    await this.mailService.sendConfirmationEmail(user.email, token);
-  }
-
-  public async requestPasswordReset(
-    dto: RequestPasswordResetDto,
-  ): Promise<void> {
-    const user = await this.findByEmail(dto.email);
-    if (!user || !user.isEmailConfirmed) return;
-
-    const token = this.jwtService.sign(
-      {
-        purpose: JWT_PURPOSE.RESET_PASSWORD,
-        sub: user.id,
-        email: user.email,
-      },
-      JWT_EXPIRES_IN.RESET_PASSWORD,
-    );
-    await this.mailService.sendPasswordReset(user.email, token);
-  }
-
-  public async resetPasswordAfterRevert(
-    token: string,
-    dto: ResetPasswordAfterRevertDto,
-  ): Promise<void> {
-    const payload = await this.jwtService.verify(
-      token,
-      JWT_PURPOSE.RESET_PASSWORD_AFTER_REVERT,
-    );
-    const user = await this.findByIdOrThrow(payload.sub);
-
-    const match = await bcrypt.compare(dto.newPassword, user.password);
-    if (match)
-      throw new ConflictException(
-        'New password must be different from the current one',
-      );
-
-    user.password = await bcrypt.hash(dto.newPassword, 10);
-    await this.usersRepository.save(user);
-    await this.jwtService.markAsUsed(
-      payload.jti,
-      JWT_EXPIRES_IN.RESET_PASSWORD,
-    );
-  }
-
-  public async requestUnlock(dto: RequestUnlockDto): Promise<void> {
-    const user = await this.findByEmail(dto.email);
-    if (!user || !user.isLocked) return;
-
-    const token = this.jwtService.sign(
-      {
-        purpose: JWT_PURPOSE.UNLOCK_ACCOUNT,
-        sub: user.id,
-        email: user.email,
-      },
-      JWT_EXPIRES_IN.UNLOCK_ACCOUNT,
-    );
-    await this.mailService.sendUnlockAccount(user.email, token);
-  }
-
-  // Patch
-  public async update(user: User): Promise<void> {
-    await this.usersRepository.save(user);
-  }
-
+  // ===== PATCH METHODS =====
   public async updateProfile(id: number, dto: UpdateUserDto): Promise<void> {
     const user = await this.findByIdOrThrow(id);
 
@@ -158,7 +84,7 @@ export class UsersService {
 
     if (dto.name) user.name = dto.name;
 
-    await this.usersRepository.save(user);
+    await this.save(user);
   }
 
   public async updatePassword(
@@ -176,7 +102,7 @@ export class UsersService {
       );
 
     user.password = await bcrypt.hash(dto.newPassword, 10);
-    await this.usersRepository.save(user);
+    await this.save(user);
   }
 
   public async requestEmailUpdate(
@@ -203,7 +129,7 @@ export class UsersService {
       );
 
     user.newEmail = dto.newEmail;
-    await this.usersRepository.save(user);
+    await this.save(user);
 
     const token = this.jwtService.sign(
       {
@@ -216,7 +142,13 @@ export class UsersService {
     await this.mailService.sendConfirmationUpdatedEmail(user.newEmail, token);
   }
 
-  // Delete
+  public async lock(id: number): Promise<void> {
+    const user = await this.findByIdOrThrow(id);
+    user.isLocked = true;
+    await this.save(user);
+  }
+
+  // ===== DELETE METHODS =====
   public async delete(id: number): Promise<void> {
     await this.findByIdOrThrow(id);
     await this.usersRepository.delete(id);
@@ -229,14 +161,8 @@ export class UsersService {
     });
   }
 
-  // Aux
-  public async lock(id: number): Promise<void> {
-    const user = await this.findByIdOrThrow(id);
-    user.isLocked = true;
-    await this.usersRepository.save(user);
-  }
-
-  private async ensureEmailIsAvailable(email: string): Promise<void> {
+  // ===== AUXILIARY METHODS =====
+  public async ensureEmailIsAvailable(email: string): Promise<void> {
     const user = await this.findByEmail(email);
     if (user) throw new ConflictException('Email is already registered');
   }

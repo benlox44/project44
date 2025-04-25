@@ -16,7 +16,12 @@ import { UsersRedisService } from 'src/redis/services/users-redis.service';
 import { User } from 'src/users/entities/user.entity';
 import { UsersService } from 'src/users/users.service';
 
+import { CreateUserDto } from './dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
+import { RequestConfirmationEmail } from './dto/request-confirmation-email.dto';
+import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
+import { RequestUnlockDto } from './dto/request-unlock.dto';
+import { ResetPasswordAfterRevertDto } from './dto/reset-password-after-revert.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
@@ -40,7 +45,7 @@ export class AuthService {
       throw new BadRequestException('Email Already confirmed');
 
     user.isEmailConfirmed = true;
-    await this.usersService.update(user);
+    await this.usersService.save(user);
     await this.jwtService.markAsUsed(payload.jti, JWT_EXPIRES_IN.CONFIRM_EMAIL);
   }
 
@@ -60,7 +65,7 @@ export class AuthService {
     user.email = user.newEmail!;
     user.newEmail = null;
     user.emailChangedAt = new Date();
-    await this.usersService.update(user);
+    await this.usersService.save(user);
 
     const revertToken = this.jwtService.sign(
       { purpose: JWT_PURPOSE.REVERT_EMAIL, sub: user.id, email: user.oldEmail },
@@ -86,7 +91,7 @@ export class AuthService {
     user.oldEmail = null;
     user.emailChangedAt = null;
 
-    await this.usersService.update(user);
+    await this.usersService.save(user);
     await this.jwtService.markAsUsed(payload.jti, JWT_EXPIRES_IN.REVERT_EMAIL);
 
     return this.jwtService.sign(
@@ -111,7 +116,7 @@ export class AuthService {
     }
 
     user.isLocked = false;
-    await this.usersService.update(user);
+    await this.usersService.save(user);
 
     await this.jwtService.markAsUsed(
       payload.jti,
@@ -120,6 +125,22 @@ export class AuthService {
   }
 
   // Post
+  public async create(dto: CreateUserDto): Promise<void> {
+    await this.usersService.ensureEmailIsAvailable(dto.email);
+
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    const user = await this.usersService.save({
+      ...dto,
+      password: hashedPassword,
+    } as User);
+
+    const token = this.jwtService.sign(
+      { purpose: JWT_PURPOSE.CONFIRM_EMAIL, sub: user.id, email: user.email },
+      JWT_EXPIRES_IN.CONFIRM_EMAIL,
+    );
+    await this.mailService.sendConfirmationEmail(user.email, token);
+  }
+
   public async login(dto: LoginDto): Promise<string> {
     const user = await this.validateUserCredentials(dto);
     const accesToken = this.jwtService.sign(
@@ -127,6 +148,60 @@ export class AuthService {
       JWT_EXPIRES_IN.SESSION,
     );
     return accesToken;
+  }
+
+  public async requestConfirmationEmail(
+    dto: RequestConfirmationEmail,
+  ): Promise<void> {
+    const user = await this.usersService.findByEmail(dto.email);
+    if (!user || user.isEmailConfirmed) return;
+
+    const token = this.jwtService.sign(
+      { purpose: JWT_PURPOSE.CONFIRM_EMAIL, sub: user.id, email: user.email },
+      JWT_EXPIRES_IN.CONFIRM_EMAIL,
+    );
+    await this.mailService.sendConfirmationEmail(user.email, token);
+  }
+
+  public async requestPasswordReset(
+    dto: RequestPasswordResetDto,
+  ): Promise<void> {
+    const user = await this.usersService.findByEmail(dto.email);
+    if (!user || !user.isEmailConfirmed) return;
+
+    const token = this.jwtService.sign(
+      {
+        purpose: JWT_PURPOSE.RESET_PASSWORD,
+        sub: user.id,
+        email: user.email,
+      },
+      JWT_EXPIRES_IN.RESET_PASSWORD,
+    );
+    await this.mailService.sendPasswordReset(user.email, token);
+  }
+
+  public async resetPasswordAfterRevert(
+    token: string,
+    dto: ResetPasswordAfterRevertDto,
+  ): Promise<void> {
+    const payload = await this.jwtService.verify(
+      token,
+      JWT_PURPOSE.RESET_PASSWORD_AFTER_REVERT,
+    );
+    const user = await this.usersService.findByIdOrThrow(payload.sub);
+
+    const match = await bcrypt.compare(dto.newPassword, user.password);
+    if (match)
+      throw new ConflictException(
+        'New password must be different from the current one',
+      );
+
+    user.password = await bcrypt.hash(dto.newPassword, 10);
+    await this.usersService.save(user);
+    await this.jwtService.markAsUsed(
+      payload.jti,
+      JWT_EXPIRES_IN.RESET_PASSWORD,
+    );
   }
 
   public async resetPassword(
@@ -146,11 +221,26 @@ export class AuthService {
       );
 
     user.password = await bcrypt.hash(dto.newPassword, 10);
-    await this.usersService.update(user);
+    await this.usersService.save(user);
     await this.jwtService.markAsUsed(
       payload.jti,
       JWT_EXPIRES_IN.RESET_PASSWORD,
     );
+  }
+
+  public async requestUnlock(dto: RequestUnlockDto): Promise<void> {
+    const user = await this.usersService.findByEmail(dto.email);
+    if (!user || !user.isLocked) return;
+
+    const token = this.jwtService.sign(
+      {
+        purpose: JWT_PURPOSE.UNLOCK_ACCOUNT,
+        sub: user.id,
+        email: user.email,
+      },
+      JWT_EXPIRES_IN.UNLOCK_ACCOUNT,
+    );
+    await this.mailService.sendUnlockAccount(user.email, token);
   }
 
   // Aux

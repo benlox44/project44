@@ -1,7 +1,12 @@
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 
 import { AuthService } from './auth.service';
+import { CreateUserDto } from './dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
+import { RequestConfirmationEmail } from './dto/request-confirmation-email.dto';
+import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
+import { RequestUnlockDto } from './dto/request-unlock.dto';
+import { ResetPasswordAfterRevertDto } from './dto/reset-password-after-revert.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Controller('auth')
@@ -24,6 +29,16 @@ export class AuthController {
     return { message: 'Email changed successfully' };
   }
 
+  @UseGuards(AuthGuard('jwt'))
+  @Patch('me/email')
+  public async requestUpdateEmail(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: UpdateUserEmailDto,
+  ): Promise<{ message: string }> {
+    await this.usersService.requestEmailUpdate(user.sub, dto);
+    return { message: 'Confirmation email sent to ' + dto.newEmail };
+  }
+
   @Get('revert-email')
   public async revertEmail(
     @Query('token') token: string,
@@ -40,10 +55,38 @@ export class AuthController {
     return { message: 'Your account has been unlocked. You can now log in' };
   }
 
+  @Post()
+  public async create(
+    @Body() dto: CreateUserDto,
+  ): Promise<{ message: string }> {
+    await this.authService.create(dto);
+    return { message: 'Confirmation email sent to ' + dto.email };
+  }
+
   @Post('login')
   public async login(@Body() dto: LoginDto): Promise<{ access_token: string }> {
     const access_token = await this.authService.login(dto);
     return { access_token };
+  }
+
+  @Post('request-confirmation-email')
+  public async requestConfirmationEmail(
+    @Body() dto: RequestConfirmationEmail,
+  ): Promise<{ message: string }> {
+    await this.authService.requestConfirmationEmail(dto);
+    return {
+      message: 'If your email is registered and not confirmed, a link was sent',
+    };
+  }
+
+  @Post('request-password-reset')
+  public async requestPasswordReset(
+    @Body() dto: RequestPasswordResetDto,
+  ): Promise<{ message: string }> {
+    await this.authService.requestPasswordReset(dto);
+    return {
+      message: 'If your email is registered and is confirmed, a link was sent',
+    };
   }
 
   @Post('reset-password')
@@ -53,5 +96,24 @@ export class AuthController {
   ): Promise<{ message: string }> {
     await this.authService.resetPassword(token, dto);
     return { message: 'Password changed successfully' };
+  }
+
+  @Post('reset-password-after-revert')
+  public async resetPasswordAfterRevert(
+    @Query('token') token: string,
+    @Body() dto: ResetPasswordAfterRevertDto,
+  ): Promise<{ message: string }> {
+    await this.authService.resetPasswordAfterRevert(token, dto);
+    return { message: 'Password changed successfully' };
+  }
+
+  @Post('request-unlock')
+  public async requestUnlock(
+    @Body() dto: RequestUnlockDto,
+  ): Promise<{ message: string }> {
+    await this.authService.requestUnlock(dto);
+    return {
+      message: 'If your email is registered and is locked, a link was sent',
+    };
   }
 }

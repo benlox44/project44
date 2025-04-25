@@ -6,8 +6,6 @@ import {
   Param,
   ParseIntPipe,
   Patch,
-  Post,
-  Query,
 } from '@nestjs/common';
 import { UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
@@ -15,11 +13,6 @@ import { AuthGuard } from '@nestjs/passport';
 import { CurrentUser } from 'src/jwt/decorators/current-user.decorator';
 import { JwtPayload } from 'src/jwt/types/jwt-payload.type';
 
-import { CreateUserDto } from './dto/create-user.dto';
-import { RequestConfirmationEmail } from './dto/request-confirmation-email.dto';
-import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
-import { RequestUnlockDto } from './dto/request-unlock.dto';
-import { ResetPasswordAfterRevertDto } from './dto/reset-password-after-revert.dto';
 import { UpdateUserDto } from './dto/update-user-dto';
 import { UpdateUserEmailDto } from './dto/update-user-email.dto';
 import { UpdateUserPasswordDto } from './dto/update-user-password.dto';
@@ -30,59 +23,22 @@ import { UsersService } from './users.service';
 export class UsersController {
   public constructor(private readonly usersService: UsersService) {}
 
+  // Admin
   @Get()
   public async findAll(): Promise<{ data: SafeUser[] }> {
     const data = await this.usersService.findAll();
     return { data };
   }
 
-  @Post()
-  public async create(
-    @Body() dto: CreateUserDto,
+  @Delete(':id')
+  public async deleteById(
+    @Param('id', ParseIntPipe) id: number,
   ): Promise<{ message: string }> {
-    await this.usersService.create(dto);
-    return { message: 'Confirmation email sent to ' + dto.email };
+    await this.usersService.delete(id);
+    return { message: `User with ID ${id} deleted successfully` };
   }
 
-  @Post('request-confirmation-email')
-  public async requestConfirmationEmail(
-    @Body() dto: RequestConfirmationEmail,
-  ): Promise<{ message: string }> {
-    await this.usersService.requestConfirmationEmail(dto);
-    return {
-      message: 'If your email is registered and not confirmed, a link was sent',
-    };
-  }
-
-  @Post('request-password-reset')
-  public async requestPasswordReset(
-    @Body() dto: RequestPasswordResetDto,
-  ): Promise<{ message: string }> {
-    await this.usersService.requestPasswordReset(dto);
-    return {
-      message: 'If your email is registered and is confirmed, a link was sent',
-    };
-  }
-
-  @Post('reset-password-after-revert')
-  public async resetPasswordAfterRevert(
-    @Query('token') token: string,
-    @Body() dto: ResetPasswordAfterRevertDto,
-  ): Promise<{ message: string }> {
-    await this.usersService.resetPasswordAfterRevert(token, dto);
-    return { message: 'Password changed successfully' };
-  }
-
-  @Post('request-unlock')
-  public async requestUnlock(
-    @Body() dto: RequestUnlockDto,
-  ): Promise<{ message: string }> {
-    await this.usersService.requestUnlock(dto);
-    return {
-      message: 'If your email is registered and is locked, a link was sent',
-    };
-  }
-
+  // User
   @UseGuards(AuthGuard('jwt'))
   @Patch('me')
   public async updateProfile(
@@ -120,13 +76,5 @@ export class UsersController {
   ): Promise<{ message: string }> {
     await this.usersService.delete(user.sub);
     return { message: 'Your account was deleted successfully' };
-  }
-
-  @Delete(':id')
-  public async deleteById(
-    @Param('id', ParseIntPipe) id: number,
-  ): Promise<{ message: string }> {
-    await this.usersService.delete(id);
-    return { message: `User with ID ${id} deleted successfully` };
   }
 }

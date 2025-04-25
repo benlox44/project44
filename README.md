@@ -3,8 +3,7 @@
 This is a personal project focused on learning and implementing modern full-stack web development.  
 Currently, the backend is the main focus, built using [NestJS](https://nestjs.com) with robust user authentication and email workflows.
 
-
-##  🐳 Run the project (Docker)
+## 🐳 Run the project (Docker)
 
 ```bash
 docker  compose  up  --build
@@ -18,9 +17,9 @@ docker  compose  up  --build
 
 ## 📁 Project Structure
 
--  `/` - Docker setup and global configuration
--  `/backend` - NestJS API with authentication and user management
--  `/frontend` - (planned) web client interface
+- `/` - Docker setup and global configuration
+- `/backend` - NestJS API with authentication and user management
+- `/frontend` - (planned) web client interface
 
 ## 📌 Stack
 
@@ -59,6 +58,7 @@ npm run test
 ```
 
 ## 🗂️ To do List
+
 - Move these endpoints from `/users` to `/auth`:
 
 `/request-confirmation-email`
@@ -66,6 +66,8 @@ npm run test
 `/request-unlock`
 `/reset-password-after-revert`
 
+- .envs to change dev/prod
+- Refresh tokens
 - Roles and permissions
 - Add audit logs (user deletions, email changes, etc.)
 - Implement frontend in `/frontend`

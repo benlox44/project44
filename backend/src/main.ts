@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from './app.module';
 import 'dotenv/config';
+import { required } from './common/config/env.config';
 
 const logger = new Logger('Bootstrap');
 
@@ -10,9 +11,10 @@ async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(new ValidationPipe());
 
-  const port = process.env.PORT ?? 3000;
+  const port = required('PORT');
+  const baseUrl = required('BASE_URL');
   await app.listen(port);
-  logger.log(`🚀 Application is running on http://localhost:${port}`);
+  logger.log(`🚀 Application is running on ${baseUrl}`);
 }
 
 bootstrap().catch(err => {
