@@ -59,14 +59,6 @@ npm run test
 
 ## 🗂️ To do List
 
-- Move these endpoints from `/users` to `/auth`:
-
-`/request-confirmation-email`
-`/request-password-reset`
-`/request-unlock`
-`/reset-password-after-revert`
-
-- .envs to change dev/prod
 - Refresh tokens
 - Roles and permissions
 - Add audit logs (user deletions, email changes, etc.)

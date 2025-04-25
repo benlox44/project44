@@ -3,15 +3,28 @@ import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
-import { RequestConfirmationEmail } from './dto/request-confirmation-email.dto';
+import { RequestConfirmationEmailDto } from './dto/request-confirmation-email.dto';
 import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
 import { RequestUnlockDto } from './dto/request-unlock.dto';
 import { ResetPasswordAfterRevertDto } from './dto/reset-password-after-revert.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 
+/**
+ * AuthController
+ *
+ * Controller responsible for handling authentication and authorization flows.
+ *
+ * Exposes endpoints separated by HTTP method:
+ * - GET METHODS: Confirm email, revert email, unlock account using tokens.
+ * - POST METHODS: Register, login, request password reset, reset password, request unlock.
+ *
+ * Routes manage user sessions and account recovery processes.
+ */
 @Controller('auth')
 export class AuthController {
   public constructor(private readonly authService: AuthService) {}
+
+  // ===== GET METHODS =====
 
   @Get('confirm-email')
   public async confirmEmail(
@@ -27,16 +40,6 @@ export class AuthController {
   ): Promise<{ message: string }> {
     await this.authService.confirmEmailUpdate(token);
     return { message: 'Email changed successfully' };
-  }
-
-  @UseGuards(AuthGuard('jwt'))
-  @Patch('me/email')
-  public async requestUpdateEmail(
-    @CurrentUser() user: JwtPayload,
-    @Body() dto: UpdateUserEmailDto,
-  ): Promise<{ message: string }> {
-    await this.usersService.requestEmailUpdate(user.sub, dto);
-    return { message: 'Confirmation email sent to ' + dto.newEmail };
   }
 
   @Get('revert-email')
@@ -55,6 +58,8 @@ export class AuthController {
     return { message: 'Your account has been unlocked. You can now log in' };
   }
 
+  // ===== POST METHODS =====
+
   @Post()
   public async create(
     @Body() dto: CreateUserDto,
@@ -71,7 +76,7 @@ export class AuthController {
 
   @Post('request-confirmation-email')
   public async requestConfirmationEmail(
-    @Body() dto: RequestConfirmationEmail,
+    @Body() dto: RequestConfirmationEmailDto,
   ): Promise<{ message: string }> {
     await this.authService.requestConfirmationEmail(dto);
     return {

@@ -18,11 +18,23 @@ import { UsersService } from 'src/users/users.service';
 
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
-import { RequestConfirmationEmail } from './dto/request-confirmation-email.dto';
+import { RequestConfirmationEmailDto } from './dto/request-confirmation-email.dto';
 import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
 import { RequestUnlockDto } from './dto/request-unlock.dto';
 import { ResetPasswordAfterRevertDto } from './dto/reset-password-after-revert.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+
+/**
+ * AuthService
+ *
+ * Service responsible for authentication, registration,
+ * password recovery, and email confirmation workflows.
+ *
+ * Provides methods grouped by type:
+ * - GET methods: Handle token-based confirmations.
+ * - POST methods: Handle login, registration and account recovery.
+ * - AUXILIARY methods: Internal logic for validating credentials and generating tokens.
+ */
 
 @Injectable()
 export class AuthService {
@@ -33,7 +45,8 @@ export class AuthService {
     private readonly usersRedisService: UsersRedisService,
   ) {}
 
-  // Get
+  // ===== GET METHODS (Token-based actios) =====
+
   public async confirmEmail(token: string): Promise<void> {
     const payload = await this.jwtService.verify(
       token,
@@ -124,7 +137,8 @@ export class AuthService {
     );
   }
 
-  // Post
+  // ===== POST METHODS (Credentials, registration & recovery) =====
+
   public async create(dto: CreateUserDto): Promise<void> {
     await this.usersService.ensureEmailIsAvailable(dto.email);
 
@@ -151,7 +165,7 @@ export class AuthService {
   }
 
   public async requestConfirmationEmail(
-    dto: RequestConfirmationEmail,
+    dto: RequestConfirmationEmailDto,
   ): Promise<void> {
     const user = await this.usersService.findByEmail(dto.email);
     if (!user || user.isEmailConfirmed) return;
@@ -180,13 +194,13 @@ export class AuthService {
     await this.mailService.sendPasswordReset(user.email, token);
   }
 
-  public async resetPasswordAfterRevert(
+  public async resetPassword(
     token: string,
-    dto: ResetPasswordAfterRevertDto,
+    dto: ResetPasswordDto,
   ): Promise<void> {
     const payload = await this.jwtService.verify(
       token,
-      JWT_PURPOSE.RESET_PASSWORD_AFTER_REVERT,
+      JWT_PURPOSE.RESET_PASSWORD,
     );
     const user = await this.usersService.findByIdOrThrow(payload.sub);
 
@@ -204,13 +218,13 @@ export class AuthService {
     );
   }
 
-  public async resetPassword(
+  public async resetPasswordAfterRevert(
     token: string,
-    dto: ResetPasswordDto,
+    dto: ResetPasswordAfterRevertDto,
   ): Promise<void> {
     const payload = await this.jwtService.verify(
       token,
-      JWT_PURPOSE.RESET_PASSWORD,
+      JWT_PURPOSE.RESET_PASSWORD_AFTER_REVERT,
     );
     const user = await this.usersService.findByIdOrThrow(payload.sub);
 
@@ -243,7 +257,8 @@ export class AuthService {
     await this.mailService.sendUnlockAccount(user.email, token);
   }
 
-  // Aux
+  // ===== AUXILIARY METHODS =====
+
   private async validateUserCredentials(dto: LoginDto): Promise<User> {
     const user = await this.usersService.findByEmail(dto.email);
     if (!user) throw new UnauthorizedException('Invalid credentials');

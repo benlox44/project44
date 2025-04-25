@@ -19,11 +19,23 @@ import { UpdateUserPasswordDto } from './dto/update-user-password.dto';
 import { SafeUser } from './types/safe-user.type';
 import { UsersService } from './users.service';
 
+/**
+ * UsersController
+ *
+ * Controller responsible for managing user-related endpoints.
+ *
+ * Exposes actions separated by role:
+ * - ADMIN ACTIONS: Retrieve or delete any user.
+ * - USER ACTIONS (ME): Update or delete own profile and credentials.
+ *
+ * Routes are protected by JWT authentication where necessary.
+ */
 @Controller('users')
 export class UsersController {
   public constructor(private readonly usersService: UsersService) {}
 
-  // Admin
+  // ===== ADMIN ACTIONS =====
+
   @Get()
   public async findAll(): Promise<{ data: SafeUser[] }> {
     const data = await this.usersService.findAll();
@@ -38,7 +50,8 @@ export class UsersController {
     return { message: `User with ID ${id} deleted successfully` };
   }
 
-  // User
+  // ===== USER ACTIONS (ME) =====
+
   @UseGuards(AuthGuard('jwt'))
   @Patch('me')
   public async updateProfile(

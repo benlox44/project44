@@ -49,6 +49,7 @@ export class UsersService {
   ) {}
 
   // ===== GET METHODS =====
+
   public async findAll(): Promise<SafeUser[]> {
     const users = await this.usersRepository.find();
     return users.map(toSafeUser);
@@ -69,11 +70,13 @@ export class UsersService {
   }
 
   // ===== POST / SAVE METHODS =====
+
   public save(user: User): Promise<User> {
     return this.usersRepository.save(user);
   }
 
   // ===== PATCH METHODS =====
+
   public async updateProfile(id: number, dto: UpdateUserDto): Promise<void> {
     const user = await this.findByIdOrThrow(id);
 
@@ -149,6 +152,7 @@ export class UsersService {
   }
 
   // ===== DELETE METHODS =====
+
   public async delete(id: number): Promise<void> {
     await this.findByIdOrThrow(id);
     await this.usersRepository.delete(id);
@@ -162,6 +166,7 @@ export class UsersService {
   }
 
   // ===== AUXILIARY METHODS =====
+
   public async ensureEmailIsAvailable(email: string): Promise<void> {
     const user = await this.findByEmail(email);
     if (user) throw new ConflictException('Email is already registered');
