@@ -9,10 +9,18 @@ const logger = new Logger('Bootstrap');
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
+
   app.useGlobalPipes(new ValidationPipe());
+
+  const clientOrigin = required('CLIENT_URL');
+  app.enableCors({
+    origin: clientOrigin,
+    credentials: true,
+  });
 
   const port = required('PORT');
   const baseUrl = required('BASE_URL');
+
   await app.listen(port);
   logger.log(`🚀 Application is running on ${baseUrl}`);
 }

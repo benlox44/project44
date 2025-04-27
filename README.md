@@ -6,7 +6,8 @@ Currently, the backend is the main focus, built using [NestJS](https://nestjs.co
 ## 🐳 Run the project (Docker)
 
 ```bash
-docker  compose  up  --build
+docker compose -f docker-compose.dev.yml up   # Dev
+docker compose -f docker-compose.prod.yml up  # Prod
 ```
 
 - Backend: http://localhost:3000
@@ -45,6 +46,8 @@ docker  compose  up  --build
 Even though Docker runs everything, the following commands can be useful for local-only tasks:
 
 ### ✅ Lint
+
+Work for `backend` & `frontend`
 
 ```bash
 npm run lint         # Auto-fix issues

@@ -1,13 +1,36 @@
-# Node
+# Node.js dependencies
 node_modules/
+
+# Build outputs
 dist/
-*.env
+build/
+out/
+.next/
+
+# Environment variables
+.env*
+*.local
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
 
 # Logs
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
-# Docker
+# Docker volumes
 pgdata/
 
-# Others
-*.local
+# Miscellaneous system files
+.DS_Store
+*.pem
+
+# Vercel deployment
+.vercel/
+
+# Testing
+coverage/
