@@ -15,7 +15,8 @@ export function Button({
 
   return (
     <button
-      className={`w-full py-2 px-4 rounded-md 
+      className={`w-full py-2 px-4 rounded-md
+        mb-4
         ${className}
         ${
           !hasCustomBackground

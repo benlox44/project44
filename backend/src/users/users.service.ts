@@ -69,6 +69,11 @@ export class UsersService {
     return this.usersRepository.findOneBy({ email });
   }
 
+  public async findMe(id: number): Promise<SafeUser> {
+    const user = await this.findByIdOrThrow(id);
+    return toSafeUser(user);
+  }
+
   // ===== POST / SAVE METHODS =====
 
   public save(user: User): Promise<User> {

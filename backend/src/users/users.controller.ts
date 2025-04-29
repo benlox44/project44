@@ -53,6 +53,15 @@ export class UsersController {
   // ===== USER ACTIONS (ME) =====
 
   @UseGuards(AuthGuard('jwt'))
+  @Get('me')
+  public async findProfile(
+    @CurrentUser() user: JwtPayload,
+  ): Promise<{ data: SafeUser }> {
+    const data = await this.usersService.findMe(user.sub);
+    return { data };
+  }
+
+  @UseGuards(AuthGuard('jwt'))
   @Patch('me')
   public async updateProfile(
     @CurrentUser() user: JwtPayload,

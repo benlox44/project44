@@ -62,10 +62,11 @@ npm run test
 
 ## 🗂️ To do List
 
+- TypeORM to Prisma
 - Refresh tokens
 - Roles and permissions
 - Add audit logs (user deletions, email changes, etc.)
-- Implement frontend in `/frontend`
+- Advance frontend
 
 ## 🙋‍♂️ Author
 
