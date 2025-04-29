@@ -3,19 +3,18 @@
 import { JSX, useState } from 'react';
 
 import { Notification } from '@/components/Notification';
-import { PageLayout } from '@/components/PageLayout';
 import { SimpleForm } from '@/components/SimpleForm';
 import { useApiRequestWithMessages } from '@/hooks/useApiRequestWithMessages';
-import { useUserProfile } from '@/hooks/useUserProfile';
 import type { ApiMessageResponse } from '@/types/api';
 
-interface UpdateProfileDto {
-  name?: string;
+interface UpdatePasswordDto {
+  currentPassword: string;
+  newPassword: string;
 }
 
-export default function EditProfilePage(): JSX.Element {
-  const { user } = useUserProfile();
-  const [newName, setNewName] = useState<string>(user?.name ?? '');
+export function EditPasswordForm(): JSX.Element {
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
 
   const {
     request,
@@ -24,22 +23,25 @@ export default function EditProfilePage(): JSX.Element {
     backendMessageType,
     showNotification,
     setShowNotification,
-  } = useApiRequestWithMessages<UpdateProfileDto, ApiMessageResponse>();
+  } = useApiRequestWithMessages<UpdatePasswordDto, ApiMessageResponse>();
 
   async function handleSubmit(
     e: React.FormEvent<HTMLFormElement>,
   ): Promise<void> {
     e.preventDefault();
     await request({
-      endpoint: '/users/me',
+      endpoint: '/users/me/password',
       method: 'PATCH',
-      payload: { name: newName },
-      onSuccess: () => {},
+      payload: { currentPassword, newPassword },
+      onSuccess: () => {
+        setCurrentPassword('');
+        setNewPassword('');
+      },
     });
   }
 
   return (
-    <PageLayout title="Edit Profile">
+    <>
       {showNotification && backendMessage && (
         <Notification
           type={backendMessageType}
@@ -52,16 +54,22 @@ export default function EditProfilePage(): JSX.Element {
       <SimpleForm
         fields={[
           {
-            label: 'New Name',
-            type: 'text',
-            value: newName,
-            onChange: e => setNewName(e.target.value),
+            label: 'Current Password',
+            type: 'password',
+            value: currentPassword,
+            onChange: e => setCurrentPassword(e.target.value),
+          },
+          {
+            label: 'New Password',
+            type: 'password',
+            value: newPassword,
+            onChange: e => setNewPassword(e.target.value),
           },
         ]}
         onSubmit={e => void handleSubmit(e)}
-        submitButtonText="Update Name"
+        submitButtonText="Change Password"
         loading={isLoading}
       />
-    </PageLayout>
+    </>
   );
 }

@@ -47,8 +47,8 @@ export default function Home(): JSX.Element {
 
       {isLoggedIn ? (
         <div>
-          <Link href="/user/edit-profile">
-            <Button>Edit Profile</Button>
+          <Link href="/user/profile">
+            <Button>Profile</Button>
           </Link>
           <LogoutButton onLogout={logout} />
         </div>

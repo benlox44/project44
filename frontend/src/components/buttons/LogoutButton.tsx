@@ -17,7 +17,7 @@ export function LogoutButton({ onLogout }: LogoutButtonProps): JSX.Element {
   return (
     <Button
       onClick={handleLogout}
-      className="bg-[var(--logout-bg-color)] hover:bg-[var(--logout-hover-bg-color)] text-[var(--logout-text-color)]"
+      className="bg-[var(--destructive-bg-color)] hover:bg-[var(--destructive-hover-bg-color)]"
     >
       Logout
     </Button>

@@ -19,6 +19,7 @@ interface UseApiRequestWithMessagesOptions<TPayload, TResponse>
   extends ApiRequestOptions<TPayload> {
   onSuccess: (response: TResponse) => void;
   onError?: (error: Error) => void;
+  successMessageType?: MessageType;
 }
 
 interface UseApiRequestWithMessagesResult<TPayload, TResponse> {
@@ -48,6 +49,7 @@ export function useApiRequestWithMessages<
     payload,
     onSuccess,
     onError,
+    successMessageType, // 👈 lo recibimos aquí
   }: UseApiRequestWithMessagesOptions<TPayload, TResponse>): Promise<void> {
     setIsLoading(true);
     setBackendMessage(null);
@@ -60,7 +62,7 @@ export function useApiRequestWithMessages<
       });
 
       if (hasMessage(response)) {
-        setBackendMessageType('success');
+        setBackendMessageType(successMessageType ?? 'success');
         setBackendMessage(response.message);
         setShowNotification(true);
       }

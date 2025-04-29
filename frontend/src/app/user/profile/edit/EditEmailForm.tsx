@@ -3,12 +3,19 @@
 import { JSX, useState } from 'react';
 
 import { Notification } from '@/components/Notification';
-import { PageLayout } from '@/components/PageLayout';
 import { SimpleForm } from '@/components/SimpleForm';
 import { useApiRequestWithMessages } from '@/hooks/useApiRequestWithMessages';
 import type { ApiMessageResponse } from '@/types/api';
 
-export default function ForgotPasswordPage(): JSX.Element {
+interface UpdateEmailDto {
+  password: string;
+  newEmail: string;
+}
+
+export function EditEmailForm(): JSX.Element {
+  const [password, setPassword] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+
   const {
     request,
     isLoading,
@@ -16,26 +23,25 @@ export default function ForgotPasswordPage(): JSX.Element {
     backendMessageType,
     showNotification,
     setShowNotification,
-  } = useApiRequestWithMessages<{ email: string }, ApiMessageResponse>();
-
-  const [email, setEmail] = useState('');
+  } = useApiRequestWithMessages<UpdateEmailDto, ApiMessageResponse>();
 
   async function handleSubmit(
     e: React.FormEvent<HTMLFormElement>,
   ): Promise<void> {
     e.preventDefault();
-
     await request({
-      endpoint: '/auth/request-password-reset',
-      method: 'POST',
-      payload: { email },
-      onSuccess: () => {},
-      successMessageType: 'info',
+      endpoint: '/users/me/email',
+      method: 'PATCH',
+      payload: { password, newEmail },
+      onSuccess: () => {
+        setPassword('');
+        setNewEmail('');
+      },
     });
   }
 
   return (
-    <PageLayout title="Forgot Password">
+    <>
       {showNotification && backendMessage && (
         <Notification
           type={backendMessageType}
@@ -48,17 +54,22 @@ export default function ForgotPasswordPage(): JSX.Element {
       <SimpleForm
         fields={[
           {
-            label: 'Email',
+            label: 'Current Password',
+            type: 'password',
+            value: password,
+            onChange: e => setPassword(e.target.value),
+          },
+          {
+            label: 'New Email',
             type: 'email',
-            value: email,
-            onChange: e => setEmail(e.target.value),
+            value: newEmail,
+            onChange: e => setNewEmail(e.target.value),
           },
         ]}
         onSubmit={e => void handleSubmit(e)}
-        submitButtonText="Request password reset"
+        submitButtonText="Change Email"
         loading={isLoading}
-        backHref="/login"
       />
-    </PageLayout>
+    </>
   );
 }

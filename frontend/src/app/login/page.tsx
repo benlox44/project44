@@ -77,17 +77,18 @@ export default function LoginPage(): JSX.Element {
         onSubmit={e => void handleSubmit(e)}
         submitButtonText="Login"
         loading={isLoading}
+        backHref="/"
       >
         <div className="flex flex-col items-center space-y-2">
           <Link
             href="/login/forgot-password"
-            className="text-sm text-blue-600 hover:underline"
+            className="text-sm text-[var(--link-color)] hover:text-[var(--link-hover-color)] underline"
           >
             Forgot your password?
           </Link>
           <Link
             href="/login/request-unlock"
-            className="text-sm text-blue-600 hover:underline"
+            className="text-sm text-[var(--link-color)] hover:text-[var(--link-hover-color)] underline"
           >
             Unlock your account
           </Link>

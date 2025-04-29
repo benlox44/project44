@@ -30,6 +30,7 @@ export default function RequestUnlockPage(): JSX.Element {
       method: 'POST',
       payload: { email },
       onSuccess: () => {},
+      successMessageType: 'info',
     });
   }
 

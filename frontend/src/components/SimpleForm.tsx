@@ -13,7 +13,7 @@ interface Field {
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-interface AuthFormProps {
+interface SimpleFormProps {
   fields: Field[];
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
   submitButtonText: string;
@@ -29,7 +29,7 @@ export function SimpleForm({
   loading = false,
   children,
   backHref,
-}: AuthFormProps): JSX.Element {
+}: SimpleFormProps): JSX.Element {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       {fields.map((field, index) => (
@@ -46,7 +46,7 @@ export function SimpleForm({
         {loading ? 'Loading...' : submitButtonText}
       </Button>
       {children}
-      <BackButton href={backHref} />
+      {backHref && <BackButton href={backHref} />}{' '}
     </form>
   );
 }

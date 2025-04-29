@@ -34,22 +34,6 @@ import { UsersService } from './users.service';
 export class UsersController {
   public constructor(private readonly usersService: UsersService) {}
 
-  // ===== ADMIN ACTIONS =====
-
-  @Get()
-  public async findAll(): Promise<{ data: SafeUser[] }> {
-    const data = await this.usersService.findAll();
-    return { data };
-  }
-
-  @Delete(':id')
-  public async deleteById(
-    @Param('id', ParseIntPipe) id: number,
-  ): Promise<{ message: string }> {
-    await this.usersService.delete(id);
-    return { message: `User with ID ${id} deleted successfully` };
-  }
-
   // ===== USER ACTIONS (ME) =====
 
   @UseGuards(AuthGuard('jwt'))
@@ -98,5 +82,21 @@ export class UsersController {
   ): Promise<{ message: string }> {
     await this.usersService.delete(user.sub);
     return { message: 'Your account was deleted successfully' };
+  }
+
+  // ===== ADMIN ACTIONS =====
+
+  @Get()
+  public async findAll(): Promise<{ data: SafeUser[] }> {
+    const data = await this.usersService.findAll();
+    return { data };
+  }
+
+  @Delete(':id')
+  public async deleteById(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<{ message: string }> {
+    await this.usersService.delete(id);
+    return { message: `User with ID ${id} deleted successfully` };
   }
 }

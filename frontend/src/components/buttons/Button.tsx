@@ -15,12 +15,12 @@ export function Button({
 
   return (
     <button
-      className={`w-full py-2 px-4 rounded-md
-        mb-4
+      className={`w-full py-2 px-4 rounded-md mb-4
         ${className}
+        text-[var(--button-text-color)]
         ${
           !hasCustomBackground
-            ? 'bg-[var(--primary-color)] text-white hover:bg-[var(--primary-hover-color)]'
+            ? 'bg-[var(--primary-color)] hover:bg-[var(--primary-hover-color)]'
             : ''
         }
         focus:outline-none focus:ring-2 transition`}
