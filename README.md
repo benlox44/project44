@@ -62,6 +62,7 @@ npm run test
 
 ## 🗂️ To do List
 
+- Delay response from backend when answering neutral
 - TypeORM to Prisma
 - Refresh tokens
 - Roles and permissions

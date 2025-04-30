@@ -1,16 +1,22 @@
 'use client';
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { JSX, useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { JSX } from 'react';
 
 import { Notification } from '@/components/Notification';
 import { PageLayout } from '@/components/PageLayout';
 import { SimpleForm } from '@/components/SimpleForm';
+import { TextLink } from '@/components/TextLink';
 import { useApiRequestWithMessages } from '@/hooks/useApiRequestWithMessages';
 import { useAuth } from '@/hooks/useAuth';
-import { setFlashMessage } from '@/lib/flashMessage';
+import {
+  getFlashMessage,
+  clearFlashMessage,
+  setFlashMessage,
+} from '@/lib/flashMessage';
 import type { ApiTokenResponse } from '@/types/api';
+import type { MessageType } from '@/types/common';
 
 export default function LoginPage(): JSX.Element {
   const router = useRouter();
@@ -30,6 +36,18 @@ export default function LoginPage(): JSX.Element {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  const [flashMessage, setFlashMessageState] = useState<string | null>(null);
+  const [flashType, setFlashType] = useState<MessageType>('success');
+
+  useEffect(() => {
+    const { message, type } = getFlashMessage();
+    if (message) {
+      setFlashMessageState(message);
+      setFlashType(type);
+      clearFlashMessage();
+    }
+  }, []);
 
   async function handleSubmit(
     e: React.FormEvent<HTMLFormElement>,
@@ -59,6 +77,15 @@ export default function LoginPage(): JSX.Element {
         />
       )}
 
+      {flashMessage && (
+        <Notification
+          type={flashType}
+          message={flashMessage}
+          mode="toast"
+          onClose={() => setFlashMessageState(null)}
+        />
+      )}
+
       <SimpleForm
         fields={[
           {
@@ -80,18 +107,15 @@ export default function LoginPage(): JSX.Element {
         backHref="/"
       >
         <div className="flex flex-col items-center space-y-2">
-          <Link
-            href="/login/forgot-password"
-            className="text-sm text-[var(--link-color)] hover:text-[var(--link-hover-color)] underline"
-          >
+          <TextLink href="/auth/login/forgot-password">
             Forgot your password?
-          </Link>
-          <Link
-            href="/login/request-unlock"
-            className="text-sm text-[var(--link-color)] hover:text-[var(--link-hover-color)] underline"
-          >
+          </TextLink>
+          <TextLink href="/auth/login/request-unlock">
             Unlock your account
-          </Link>
+          </TextLink>
+          <TextLink href="/auth/login/request-confirmation-email">
+            Resend confirmation email
+          </TextLink>
         </div>
       </SimpleForm>
     </PageLayout>

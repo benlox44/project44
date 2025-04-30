@@ -2,7 +2,7 @@
 
 import { JSX, useState } from 'react';
 
-import { Button } from './Button';
+import { Button } from '@/components/buttons/Button';
 
 interface DangerButtonProps {
   onConfirm: () => void | Promise<void>;

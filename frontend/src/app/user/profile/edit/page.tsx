@@ -2,10 +2,9 @@
 
 import { JSX } from 'react';
 
-import { EditEmailForm } from './EditEmailForm';
-import { EditPasswordForm } from './EditPasswordForm';
-import { EditProfileForm } from './EditProfileForm';
-
+import { EditEmailForm } from '@/app/user/profile/edit/EditEmailForm';
+import { EditPasswordForm } from '@/app/user/profile/edit/EditPasswordForm';
+import { EditProfileForm } from '@/app/user/profile/edit/EditProfileForm';
 import { BackButton } from '@/components/buttons/BackButton';
 import { PageLayout } from '@/components/PageLayout';
 

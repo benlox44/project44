@@ -1,8 +1,10 @@
 'use client';
 
+import type { MessageType } from '@/types/common';
+
 export function setFlashMessage(
   message: string,
-  type: 'success' | 'error' = 'success',
+  type: MessageType = 'success',
 ): void {
   localStorage.setItem('flash_message', message);
   localStorage.setItem('flash_type', type);
@@ -10,11 +12,10 @@ export function setFlashMessage(
 
 export function getFlashMessage(): {
   message: string | null;
-  type: 'success' | 'error';
+  type: MessageType;
 } {
   const message = localStorage.getItem('flash_message');
-  const type =
-    (localStorage.getItem('flash_type') as 'success' | 'error') || 'success';
+  const type = (localStorage.getItem('flash_type') as MessageType) || 'success';
   return { message, type };
 }
 

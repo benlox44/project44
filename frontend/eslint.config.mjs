@@ -29,6 +29,7 @@ export default tseslint.config(
       },
     },
     rules: {
+      // Typescript
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': [
         'error',
@@ -39,21 +40,41 @@ export default tseslint.config(
         'error',
         { accessibility: 'explicit' },
       ],
+
+      // Import order and enforcement of alias
       'import/order': [
         'error',
         {
           groups: ['builtin', 'external', 'internal'],
           pathGroups: [
-            { pattern: 'src/**', group: 'internal', position: 'after' },
-            { pattern: './**', group: 'internal', position: 'after' },
+            {
+              pattern: '@/**',
+              group: 'internal',
+              position: 'after',
+            },
           ],
           pathGroupsExcludedImportTypes: ['builtin'],
           'newlines-between': 'always',
-          alphabetize: { order: 'asc', caseInsensitive: true },
+          alphabetize: {
+            order: 'asc',
+            caseInsensitive: true,
+          },
         },
       ],
+
+      // Block relative imports (force @/)
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: ['../*', './*'],
+        },
+      ],
+
+      // React Hooks
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
+
+      // React (Next.js allows omitting react in scope)
       'react/react-in-jsx-scope': 'off',
     },
   },

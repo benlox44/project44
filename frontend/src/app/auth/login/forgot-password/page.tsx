@@ -57,7 +57,7 @@ export default function ForgotPasswordPage(): JSX.Element {
         onSubmit={e => void handleSubmit(e)}
         submitButtonText="Request password reset"
         loading={isLoading}
-        backHref="/login"
+        backHref="/auth/login"
       />
     </PageLayout>
   );

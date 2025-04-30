@@ -8,7 +8,13 @@ import { SimpleForm } from '@/components/SimpleForm';
 import { useApiRequestWithMessages } from '@/hooks/useApiRequestWithMessages';
 import type { ApiMessageResponse } from '@/types/api';
 
-export default function RequestUnlockPage(): JSX.Element {
+interface RequestConfirmationEmailDto {
+  email: string;
+}
+
+export default function RequestConfirmationEmailPage(): JSX.Element {
+  const [email, setEmail] = useState('');
+
   const {
     request,
     isLoading,
@@ -16,9 +22,10 @@ export default function RequestUnlockPage(): JSX.Element {
     backendMessageType,
     showNotification,
     setShowNotification,
-  } = useApiRequestWithMessages<{ email: string }, ApiMessageResponse>();
-
-  const [email, setEmail] = useState('');
+  } = useApiRequestWithMessages<
+    RequestConfirmationEmailDto,
+    ApiMessageResponse
+  >();
 
   async function handleSubmit(
     e: React.FormEvent<HTMLFormElement>,
@@ -26,19 +33,18 @@ export default function RequestUnlockPage(): JSX.Element {
     e.preventDefault();
 
     await request({
-      endpoint: '/auth/request-unlock',
+      endpoint: '/auth/request-confirmation-email',
       method: 'POST',
       payload: { email },
       onSuccess: () => {},
-      successMessageType: 'info',
     });
   }
 
   return (
-    <PageLayout title="Request Account Unlock">
+    <PageLayout title="Resend Confirmation Email">
       {showNotification && backendMessage && (
         <Notification
-          type={backendMessageType}
+          type={backendMessageType === 'success' ? 'info' : backendMessageType}
           message={backendMessage}
           mode="toast"
           onClose={() => setShowNotification(false)}
@@ -55,9 +61,9 @@ export default function RequestUnlockPage(): JSX.Element {
           },
         ]}
         onSubmit={e => void handleSubmit(e)}
-        submitButtonText="Request account unlock"
+        submitButtonText="Send Confirmation Link"
         loading={isLoading}
-        backHref="/login"
+        backHref="/auth/login"
       />
     </PageLayout>
   );

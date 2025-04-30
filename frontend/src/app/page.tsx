@@ -3,19 +3,20 @@
 import Link from 'next/link';
 import { useEffect, useState, JSX } from 'react';
 
-import { Button } from '../components/buttons/Button';
-import { LogoutButton } from '../components/buttons/LogoutButton';
-import { Notification } from '../components/Notification';
+import { Button } from '@/components/buttons/Button';
+import { LogoutButton } from '@/components/buttons/LogoutButton';
+import { Notification } from '@/components/Notification';
 import { PageLayout } from '@/components/PageLayout';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { getFlashMessage, clearFlashMessage } from '@/lib/flashMessage';
+import type { MessageType } from '@/types/common';
 
 export default function Home(): JSX.Element {
   const { isLoggedIn, userEmail, logout } = useAuth();
   const { user, loading: userLoading } = useUserProfile();
   const [flashMessage, setFlashMessage] = useState<string | null>(null);
-  const [flashType, setFlashType] = useState<'success' | 'error'>('success');
+  const [flashType, setFlashType] = useState<MessageType>('success');
 
   useEffect(() => {
     const { message, type } = getFlashMessage();
@@ -54,10 +55,10 @@ export default function Home(): JSX.Element {
         </div>
       ) : (
         <div>
-          <Link href="/login">
+          <Link href="/auth/login">
             <Button>Login</Button>
           </Link>
-          <Link href="/register">
+          <Link href="/auth/register">
             <Button>Register</Button>
           </Link>
         </div>

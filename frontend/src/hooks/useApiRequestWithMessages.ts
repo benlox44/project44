@@ -49,7 +49,7 @@ export function useApiRequestWithMessages<
     payload,
     onSuccess,
     onError,
-    successMessageType, // 👈 lo recibimos aquí
+    successMessageType,
   }: UseApiRequestWithMessagesOptions<TPayload, TResponse>): Promise<void> {
     setIsLoading(true);
     setBackendMessage(null);

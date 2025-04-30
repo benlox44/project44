@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import type { JSX } from 'react';
 
-import { Button } from './Button';
+import { Button } from '@/components/buttons/Button';
 
 interface BackButtonProps {
   label?: string;
